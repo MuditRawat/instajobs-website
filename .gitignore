@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Build output
+dist/
+build/
+.vite/
+.cache/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor / IDE
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Antigravity / local temporary artifacts
+brain/
+
+# Local reference/template files
+superio-html/
+superio-docs/
+PHASE_1_DOCUMENTATION.md
+
+# macOS extraction artifacts
+__MACOSX/
+
+# Scratch and local test artifacts
+scratch/
+server/scratch/
+instajobs-app/check_blog_breadcrumb.js
+
