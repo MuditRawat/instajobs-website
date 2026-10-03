@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import { jobService } from '../services/jobService';
 
 const applicantsData = [
@@ -247,9 +248,7 @@ const EmployerDashboardPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
         </div>

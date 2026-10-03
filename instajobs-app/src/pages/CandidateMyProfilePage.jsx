@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
 import { useAuth } from '../context/AuthContext';
 import { candidateService } from '../services/candidateService';
@@ -89,7 +90,7 @@ const CandidateMyProfilePage = () => {
             ...prev,
             fullName: p.full_name || '',
             jobTitle: p.job_title || '',
-            phone: p.phone || '',
+            phone: p.phone || data.user?.phone || user?.phone || '',
             email: getValidEmail(data.user?.email || user?.email),
             website: p.website || '',
             currentSalary: p.current_salary || '',
@@ -473,9 +474,7 @@ const CandidateMyProfilePage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
 

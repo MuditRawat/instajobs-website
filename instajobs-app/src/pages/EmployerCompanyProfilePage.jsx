@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import { employerService } from '../services/employerService';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,6 +55,8 @@ const EmployerCompanyProfilePage = () => {
 
   const categoriesSelectRef = useRef(null);
 
+  const [authMethod, setAuthMethod] = useState('email');
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
@@ -63,6 +66,8 @@ const EmployerCompanyProfilePage = () => {
         const res = await employerService.getEmployerProfile();
         if (res.success && res.profile) {
           const prof = res.profile;
+          const detectedAuthMethod = res.user?.authMethod || user?.authMethod || 'email';
+          setAuthMethod(detectedAuthMethod);
           const initialCountry = prof.country || 'Australia';
           const validCities = COUNTRY_CITY_MAP[initialCountry] || ['Melbourne'];
           const initialCity = prof.city || validCities[0] || 'Melbourne';
@@ -425,9 +430,7 @@ const EmployerCompanyProfilePage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
         </div>
@@ -557,7 +560,10 @@ const EmployerCompanyProfilePage = () => {
                               name="company_email"
                               value={formData.company_email}
                               onChange={handleChange}
-                              placeholder="creativelayers"
+                              placeholder="Email address"
+                              readOnly={authMethod === 'email'}
+                              disabled={authMethod === 'email'}
+                              style={authMethod === 'email' ? { backgroundColor: '#f0f5f7', cursor: 'not-allowed' } : {}}
                             />
                           </div>
 
@@ -570,6 +576,9 @@ const EmployerCompanyProfilePage = () => {
                               value={formData.phone}
                               onChange={handleChange}
                               placeholder="Phone number"
+                              readOnly={authMethod === 'phone'}
+                              disabled={authMethod === 'phone'}
+                              style={authMethod === 'phone' ? { backgroundColor: '#f0f5f7', cursor: 'not-allowed' } : {}}
                             />
                           </div>
 

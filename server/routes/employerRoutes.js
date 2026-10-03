@@ -14,12 +14,16 @@ const {
   getProfile,
   updateProfile,
   uploadLogo,
-  uploadCover
+  uploadCover,
+  deleteProfile
 } = require('../controllers/employerProfileController');
 
 // Protected Employer Profile Endpoints
 router.get('/profile', unifiedAuthMiddleware, getProfile);
 router.put('/profile', unifiedAuthMiddleware, updateProfile);
+router.delete('/profile', unifiedAuthMiddleware, deleteProfile);
+router.delete('/account', unifiedAuthMiddleware, deleteProfile);
+
 
 // Protected Employer Logo & Cover Upload Endpoints
 router.post('/profile/logo', unifiedAuthMiddleware, uploadLogo);

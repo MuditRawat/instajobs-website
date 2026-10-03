@@ -55,7 +55,9 @@ const LoginPage = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      if (role === 'employer') {
+      if (role === 'admin') {
+        navigate('/admin-dashboard', { replace: true });
+      } else if (role === 'employer') {
         navigate('/employer-dashboard', { replace: true });
       } else if (role === 'candidate') {
         navigate('/candidate-dashboard', { replace: true });
@@ -197,7 +199,9 @@ const LoginPage = () => {
 
       setMessage('Verification successful! Redirecting...');
       setTimeout(() => {
-        if (targetRole === 'employer') {
+        if (targetRole === 'admin') {
+          navigate('/admin-dashboard');
+        } else if (targetRole === 'employer') {
           navigate('/employer-dashboard');
         } else {
           navigate('/candidate-dashboard');

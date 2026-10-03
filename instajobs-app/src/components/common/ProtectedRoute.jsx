@@ -29,6 +29,9 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 
   // 2. Cross-role access protection
   if (allowedRole && role && role !== allowedRole) {
+    if (role === 'admin') {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
     if (role === 'employer') {
       return <Navigate to="/employer-dashboard" replace />;
     }

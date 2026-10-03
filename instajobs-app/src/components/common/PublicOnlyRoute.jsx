@@ -39,6 +39,9 @@ const PublicOnlyRoute = ({ children }) => {
         </div>
       );
     }
+    if (role === 'admin') {
+      return <Navigate to="/admin-dashboard" replace />;
+    }
     if (role === 'employer') {
       return <Navigate to="/employer-dashboard" replace />;
     }

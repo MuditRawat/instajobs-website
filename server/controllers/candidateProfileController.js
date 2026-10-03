@@ -106,6 +106,17 @@ const updateProfile = async (req, res) => {
           req.user.email = cleanEmail;
         }
       }
+    } else if (authMethod === 'email' && email !== undefined && email !== null) {
+      const cleanEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+      const currentEmail = req.user?.email ? req.user.email.trim().toLowerCase() : '';
+      if (cleanEmail && currentEmail && cleanEmail !== currentEmail) {
+        return res.status(400).json({
+          success: false,
+          error: 'Bad Request',
+          code: 'EMAIL_ADDRESS_READONLY',
+          message: 'Verified email address cannot be modified.'
+        });
+      }
     }
 
     const fields = {
@@ -138,7 +149,7 @@ const updateProfile = async (req, res) => {
       }
     }
 
-    const updatedProfile = await CandidateProfileService.updateCandidateProfile(userId, updatePayload);
+    const updatedProfile = await CandidateProfileService.updateCandidateProfile(userId, updatePayload, authMethod);
     const userEmail = (req.user?.email && typeof req.user.email === 'string' && req.user.email.includes('@')) ? req.user.email : null;
 
     return res.status(200).json({
@@ -472,10 +483,50 @@ const uploadAvatar = async (req, res) => {
   }
 };
 
+/**
+ * Controller: Delete Candidate Profile and Account
+ * DELETE /api/candidate/profile
+ */
+const deleteProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'candidate') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only candidate accounts can perform candidate profile deletion.'
+      });
+    }
+
+    const result = await CandidateProfileService.deleteCandidateAccount(userId);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[deleteCandidateProfile Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to delete candidate profile and account.'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
-  uploadAvatar
+  uploadAvatar,
+  deleteProfile
 };
+
 
 

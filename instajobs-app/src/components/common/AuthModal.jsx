@@ -240,7 +240,9 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
       setMessage('Verification successful!');
       setTimeout(() => {
         handleClose();
-        if (targetRole === 'employer') {
+        if (targetRole === 'admin') {
+          navigate('/admin-dashboard');
+        } else if (targetRole === 'employer') {
           navigate('/employer-dashboard');
         } else {
           navigate('/candidate-dashboard');

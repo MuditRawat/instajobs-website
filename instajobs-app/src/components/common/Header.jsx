@@ -15,7 +15,9 @@ const Header = () => {
   const handleShopAuthClick = (e, defaultTarget) => {
     if (isAuthenticated) {
       e.preventDefault();
-      if (role === 'employer') {
+      if (role === 'admin') {
+        navigate('/admin-dashboard');
+      } else if (role === 'employer') {
         navigate('/employer-dashboard');
       } else {
         navigate('/candidate-dashboard');
@@ -46,7 +48,8 @@ const Header = () => {
 
   const isEmployerDashboard = currentPath.startsWith('/employer-dashboard');
   const isCandidateDashboard = currentPath.startsWith('/candidate-dashboard');
-  const isDashboard = isEmployerDashboard || isCandidateDashboard;
+  const isAdminDashboard = currentPath.startsWith('/admin-dashboard');
+  const isDashboard = isEmployerDashboard || isCandidateDashboard || isAdminDashboard;
 
   React.useEffect(() => {
     if (window.$ && window.$.fn && window.$.fn.mmenu) {
@@ -147,6 +150,12 @@ const Header = () => {
                 </li>
               </ul>
             </li>
+
+            {isAuthenticated && role === 'admin' && (
+              <li className={isAdminDashboard ? 'current' : ''}>
+                <Link to="/admin-dashboard">Admin Dashboard</Link>
+              </li>
+            )}
 
             <li className={isBlog ? 'current dropdown' : 'dropdown'}>
               <span>Blog</span>
@@ -259,7 +268,18 @@ const Header = () => {
                 <span className="name">My Account</span>
               </a>
               <ul className="dropdown-menu">
-                {isEmployerDashboard ? (
+                {isAdminDashboard ? (
+                  <>
+                    <li className="active">
+                      <Link to="/admin-dashboard">
+                        <i className="la la-home"></i> Admin Dashboard
+                      </Link>
+                    </li>
+                    <li>
+                      <LogoutLink />
+                    </li>
+                  </>
+                ) : isEmployerDashboard ? (
                   <>
                     <li className="active">
                       <Link to="/employer-dashboard">

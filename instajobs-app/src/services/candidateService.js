@@ -98,8 +98,39 @@ export const candidateService = {
     }
 
     return data;
+  },
+
+  /**
+   * Delete the current candidate's profile and account
+   * DELETE /api/candidate/profile
+   * @returns {Promise<{ success: boolean, message: string }>}
+   */
+  async deleteCandidateProfile() {
+    const session = await authService.getSession();
+    if (!session?.access_token) {
+      throw new Error('User session not found or token expired. Please log in again.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/candidate/profile`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      const err = new Error(data.message || data.error || 'Failed to delete candidate profile.');
+      err.statusCode = response.status;
+      throw err;
+    }
+
+    return data;
   }
 };
 
 export default candidateService;
+
 

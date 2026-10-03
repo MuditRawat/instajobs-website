@@ -7,6 +7,7 @@ const candidateRoutes = require('./routes/candidateRoutes');
 const employerRoutes = require('./routes/employerRoutes');
 const jobRoutes = require('./routes/jobRoutes');
 const authxRoutes = require('./routes/authxRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -37,6 +38,9 @@ app.use('/api/candidate', candidateRoutes);
 
 // Employer Job Management Routes
 app.use('/api/employer', employerRoutes);
+
+// Admin Management Routes (Phase 2)
+app.use('/api/admin', adminRoutes);
 
 // AuthX Integration Foundation Routes (Phase 1)
 app.use('/api/v1/authx', authxRoutes);

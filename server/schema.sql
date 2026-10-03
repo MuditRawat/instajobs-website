@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS employer_profiles (
     est_since TEXT,
     categories TEXT[] DEFAULT '{}',
     allow_in_search BOOLEAN DEFAULT true,
+    approval_status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (approval_status IN ('pending', 'approved', 'blocked')),
     social_facebook TEXT,
     social_twitter TEXT,
     social_linkedin TEXT,
@@ -77,8 +78,9 @@ CREATE TABLE IF NOT EXISTS employer_profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Index on employer user_id
+-- Indexes on employer_profiles
 CREATE INDEX IF NOT EXISTS idx_employer_profiles_user_id ON employer_profiles(user_id);
+CREATE INDEX IF NOT EXISTS idx_employer_profiles_approval_status ON employer_profiles(approval_status);
 
 -- 4. JOBS TABLE
 -- Stores job postings created by employers

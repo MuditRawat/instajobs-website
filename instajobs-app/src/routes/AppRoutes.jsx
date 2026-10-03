@@ -39,6 +39,7 @@ import InvoicePage from '../pages/InvoicePage';
 import ContactPage from '../pages/ContactPage';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
+import AdminDashboardPage from '../pages/AdminDashboardPage';
 import ProtectedRoute from '../components/common/ProtectedRoute';
 import PublicOnlyRoute from '../components/common/PublicOnlyRoute';
 import ScrollToTopButton from '../components/common/ScrollToTopButton';
@@ -59,6 +60,9 @@ const AppRoutes = () => {
         <Route path="/job-single-v6" element={<Navigate to="/jobs/1" replace />} />
         <Route path="/employers-list" element={<Navigate to="/employers" replace />} />
         <Route path="/employers-single-v1" element={<Navigate to="/employers/1" replace />} />
+
+        {/* Protected Admin Routes */}
+        <Route path="/admin-dashboard" element={<ProtectedRoute allowedRole="admin"><AdminDashboardPage /></ProtectedRoute>} />
 
         {/* Protected Employer Routes */}
         <Route path="/employer-dashboard" element={<ProtectedRoute allowedRole="employer"><EmployerDashboardPage /></ProtectedRoute>} />

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import { jobService } from '../services/jobService';
 import { employerService } from '../services/employerService';
 
@@ -351,7 +352,7 @@ const EmployerPostJobPage = () => {
       if (err.statusCode === 401) {
         setErrorMessage('Your session has expired or you are not logged in. Please log in again.');
       } else if (err.statusCode === 403) {
-        setErrorMessage('Access denied. Only registered employers can post or edit jobs.');
+        setErrorMessage(err.message || 'Access denied. Employer approval is required to create jobs.');
       } else {
         setErrorMessage(err.message || (isEdit ? 'Failed to update job.' : 'Failed to post job. Please try again.'));
       }
@@ -426,9 +427,7 @@ const EmployerPostJobPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
         </div>

@@ -49,13 +49,27 @@ class CandidateProfileService {
    * @param {object} updateData
    * @returns {Promise<object>}
    */
-  static async updateCandidateProfile(userId, updateData) {
+  static async updateCandidateProfile(userId, updateData, authMethod = 'email') {
     if (!supabase) {
       throw new Error('Supabase database client is not configured.');
     }
 
     if (!userId) {
       throw new Error('User ID is required to update candidate profile.');
+    }
+
+    // Check if profile row already exists
+    const currentProfile = await this.getCandidateProfile(userId);
+
+    // If account was registered via mobile (authMethod === 'phone'), protect the verified phone number from modification
+    if (authMethod === 'phone' && currentProfile.phone && Object.prototype.hasOwnProperty.call(updateData, 'phone')) {
+      const incomingPhone = typeof updateData.phone === 'string' ? updateData.phone.trim() : updateData.phone;
+      if (incomingPhone && incomingPhone !== currentProfile.phone) {
+        const err = new Error('Verified mobile phone number cannot be modified.');
+        err.statusCode = 400;
+        err.code = 'PHONE_NUMBER_READONLY';
+        throw err;
+      }
     }
 
     // Explicit whitelist of allowed database fields
@@ -146,7 +160,72 @@ class CandidateProfileService {
 
     return data;
   }
+
+  /**
+   * Delete candidate account and all associated profile/application data safely
+   * @param {string} userId - Authenticated user UUID
+   * @returns {Promise<{ success: boolean, message: string }>}
+   */
+  static async deleteCandidateAccount(userId) {
+    if (!supabase) {
+      throw new Error('Supabase database client is not configured.');
+    }
+
+    if (!userId) {
+      throw new Error('User ID is required to delete candidate account.');
+    }
+
+    // 1. Fetch candidate profile to get candidate_profiles.id
+    const { data: profile, error: profErr } = await supabase
+      .from('candidate_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (profErr) {
+      throw new Error(`Database error resolving candidate profile: ${profErr.message}`);
+    }
+
+    if (profile) {
+      // 2. Delete any applications submitted by this candidate
+      try {
+        await supabase
+          .from('job_applications')
+          .delete()
+          .eq('candidate_id', profile.id);
+      } catch (appErr) {
+        // Table or column may not exist yet or no rows
+        console.warn('[deleteCandidateAccount] Application deletion notice:', appErr.message);
+      }
+
+      // 3. Delete candidate profile
+      const { error: profileDeleteErr } = await supabase
+        .from('candidate_profiles')
+        .delete()
+        .eq('id', profile.id);
+
+      if (profileDeleteErr) {
+        throw new Error(`Failed to delete candidate profile: ${profileDeleteErr.message}`);
+      }
+    }
+
+    // 4. Delete user account record to release AuthX sub mapping
+    const { error: userDeleteErr } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (userDeleteErr) {
+      throw new Error(`Failed to delete user account: ${userDeleteErr.message}`);
+    }
+
+    return {
+      success: true,
+      message: 'Candidate account and profile deleted successfully.'
+    };
+  }
 }
 
 module.exports = CandidateProfileService;
+
 

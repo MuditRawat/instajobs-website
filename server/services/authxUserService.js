@@ -203,7 +203,7 @@ class AuthxUserService {
       } else {
         const { error: empErr } = await supabase
           .from('employer_profiles')
-          .insert([{ user_id: userId }]);
+          .insert([{ user_id: userId, phone: normalizedPhone, approval_status: 'pending' }]);
 
         if (empErr) throw empErr;
       }

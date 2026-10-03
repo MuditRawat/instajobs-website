@@ -31,38 +31,8 @@ class JobService {
    * @returns {Promise<object>} Employer profile object with id
    */
   static async getEmployerProfileByUserId(userId) {
-    if (!supabase) {
-      throw new Error('Supabase database client is not configured.');
-    }
-    if (!userId) {
-      throw new Error('User ID is required to resolve employer profile.');
-    }
-
-    const { data, error } = await supabase
-      .from('employer_profiles')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (error) {
-      throw new Error(`Database error fetching employer profile: ${error.message}`);
-    }
-
-    if (!data) {
-      // If profile row doesn't exist yet, safely create an initial record
-      const { data: newProfile, error: insertError } = await supabase
-        .from('employer_profiles')
-        .insert([{ user_id: userId }])
-        .select('id')
-        .single();
-
-      if (insertError) {
-        throw new Error(`Failed to create missing employer profile record: ${insertError.message}`);
-      }
-      return newProfile;
-    }
-
-    return data;
+    const EmployerProfileService = require('./employerProfileService');
+    return await EmployerProfileService.getEmployerProfile(userId);
   }
 
   /**
@@ -73,6 +43,20 @@ class JobService {
    */
   static async createJob(userId, jobData) {
     const employerProfile = await this.getEmployerProfileByUserId(userId);
+
+    const status = employerProfile?.approval_status || 'pending';
+    if (status === 'pending') {
+      const err = new Error('Employer approval is required to create jobs.');
+      err.statusCode = 403;
+      err.code = 'EMPLOYER_APPROVAL_REQUIRED';
+      throw err;
+    }
+    if (status === 'blocked') {
+      const err = new Error('Employer account is blocked from creating jobs.');
+      err.statusCode = 403;
+      err.code = 'EMPLOYER_ACCOUNT_BLOCKED';
+      throw err;
+    }
 
     // Whitelist ONLY allowed job fields
     const allowedFields = [

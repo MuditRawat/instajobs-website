@@ -241,7 +241,8 @@ const updateProfile = async (req, res) => {
       });
     }
 
-    const updatedProfile = await EmployerProfileService.updateEmployerProfile(userId, req.body || {});
+    const authMethod = req.user?.authMethod || 'email';
+    const updatedProfile = await EmployerProfileService.updateEmployerProfile(userId, req.body || {}, authMethod);
 
     const userEmail = (req.user?.email && typeof req.user.email === 'string' && req.user.email.includes('@')) ? req.user.email : null;
 
@@ -601,9 +602,49 @@ const uploadCover = async (req, res) => {
   }
 };
 
+/**
+ * Controller: Delete Employer Profile, Jobs, and Account
+ * DELETE /api/employer/profile
+ */
+const deleteProfile = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'employer') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only employer accounts can perform employer profile deletion.'
+      });
+    }
+
+    const result = await EmployerProfileService.deleteEmployerAccount(userId);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('[deleteEmployerProfile Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to delete employer profile, jobs, and account.'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   uploadLogo,
-  uploadCover
+  uploadCover,
+  deleteProfile
 };
+

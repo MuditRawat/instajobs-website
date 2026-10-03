@@ -92,7 +92,7 @@ const createJob = async (req, res) => {
     const statusCode = error.statusCode || 500;
     return res.status(statusCode).json({
       success: false,
-      error: statusCode === 400 ? 'Bad Request' : 'Internal Server Error',
+      error: error.code || (statusCode === 400 ? 'Bad Request' : statusCode === 403 ? 'Forbidden' : 'Internal Server Error'),
       message: error.message || 'Failed to create job.'
     });
   }
