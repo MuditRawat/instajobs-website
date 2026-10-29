@@ -4,13 +4,16 @@ import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
 import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import { jobService } from '../services/jobService';
-import { formatLocation } from '../utils/jobFormatters';
+import { formatLocation, formatSalary, formatIndianDate } from '../utils/jobFormatters';
 
 const EmployerManageJobsPage = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionMessage, setActionMessage] = useState(null);
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [togglingJobId, setTogglingJobId] = useState(null);
+  const [deletingJobId, setDeletingJobId] = useState(null);
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -34,14 +37,6 @@ const EmployerManageJobsPage = () => {
     window.scrollTo(0, 0);
 
     if (window.$) {
-      // Re-initialize Chosen select boxes
-      if (window.$.fn && window.$.fn.chosen) {
-        window.$('.chosen-select').chosen({
-          disable_search_threshold: 10,
-          width: '100%',
-        });
-      }
-
       // Sidebar toggle handlers matching superio-html script.js
       window.$('#toggle-user-sidebar').off('click').on('click', function () {
         window.$('body').toggleClass('sidebar-active');
@@ -59,8 +54,10 @@ const EmployerManageJobsPage = () => {
   }, []);
 
   const handleToggleStatus = async (jobId, currentStatus) => {
+    if (togglingJobId) return;
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
     try {
+      setTogglingJobId(jobId);
       await jobService.updateJobStatus(jobId, newStatus);
       setJobs((prev) =>
         prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
@@ -70,15 +67,19 @@ const EmployerManageJobsPage = () => {
     } catch (err) {
       console.error('Failed to toggle status:', err);
       setActionMessage({ type: 'danger', text: err.message || 'Failed to update job status.' });
+    } finally {
+      setTogglingJobId(null);
     }
   };
 
   const handleDeleteJob = async (id, title) => {
-    if (!window.confirm(`Are you sure you want to delete "${title || 'this job'}"?`)) {
+    if (deletingJobId) return;
+    if (!window.confirm(`Are you sure you want to delete "${title || 'this job'}"? This action cannot be undone.`)) {
       return;
     }
 
     try {
+      setDeletingJobId(id);
       await jobService.deleteJob(id);
       setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
       setActionMessage({ type: 'success', text: 'Job deleted successfully.' });
@@ -86,8 +87,20 @@ const EmployerManageJobsPage = () => {
     } catch (err) {
       console.error('Error deleting job:', err);
       setActionMessage({ type: 'danger', text: err.message || 'Failed to delete job.' });
+    } finally {
+      setDeletingJobId(null);
     }
   };
+
+  const filteredJobs = jobs.filter((job) => {
+    if (timeFilter === 'all') return true;
+    if (!job.created_at) return true;
+    const jobDate = new Date(job.created_at);
+    const now = new Date();
+    const monthsDiff = (now.getFullYear() - jobDate.getFullYear()) * 12 + (now.getMonth() - jobDate.getMonth());
+    const limit = parseInt(timeFilter, 10);
+    return isNaN(limit) ? true : monthsDiff <= limit;
+  });
 
   return (
     <div className="page-wrapper dashboard">
@@ -128,9 +141,10 @@ const EmployerManageJobsPage = () => {
             </li>
             <li>
               <Link to="/employer-dashboard/shortlisted-resumes">
-                <i className="la la-bookmark-o"></i> Shortlisted Resumes
+                <i className="la la-bookmark-o"></i> Shortlisted Applicants
               </Link>
             </li>
+            {/* Temporarily hidden employer dashboard tabs
             <li>
               <Link to="/employer-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -146,6 +160,7 @@ const EmployerManageJobsPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/employer-dashboard/company-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -185,13 +200,16 @@ const EmployerManageJobsPage = () => {
                     <h4>My Job Listings</h4>
 
                     <div className="chosen-outer">
-                      {/* Tabs Box */}
-                      <select className="chosen-select">
-                        <option>Last 6 Months</option>
-                        <option>Last 12 Months</option>
-                        <option>Last 16 Months</option>
-                        <option>Last 24 Months</option>
-                        <option>Last 5 year</option>
+                      <select
+                        className="form-control form-control-sm"
+                        style={{ width: 'auto', display: 'inline-block' }}
+                        value={timeFilter}
+                        onChange={(e) => setTimeFilter(e.target.value)}
+                      >
+                        <option value="all">All Postings</option>
+                        <option value="6">Last 6 Months</option>
+                        <option value="12">Last 12 Months</option>
+                        <option value="24">Last 24 Months</option>
                       </select>
                     </div>
                   </div>
@@ -205,34 +223,51 @@ const EmployerManageJobsPage = () => {
                       </div>
                     ) : error ? (
                       <div className="alert alert-danger m-4">{error}</div>
-                    ) : jobs.length === 0 ? (
+                    ) : filteredJobs.length === 0 ? (
                       <div className="text-center py-5">
-                        <h5>No jobs posted yet.</h5>
-                        <p className="text-muted">Create a job listing from "Post a New Job" to see it here.</p>
+                        <i className="flaticon-briefcase text-muted" style={{ fontSize: '42px', opacity: 0.5 }}></i>
+                        <h5 className="mt-3 mb-1 font-weight-bold text-dark">
+                          {jobs.length === 0 ? 'No jobs posted yet.' : 'No jobs found in this time range.'}
+                        </h5>
+                        <p className="text-muted small mb-3">
+                          {jobs.length === 0
+                            ? 'Create a job listing from "Post a New Job" to see it here.'
+                            : 'Try selecting a broader date filter.'}
+                        </p>
+                        {jobs.length === 0 && (
+                          <Link to="/employer-dashboard/post-job" className="theme-btn btn-style-one">
+                            Post a New Job
+                          </Link>
+                        )}
                       </div>
                     ) : (
                       <div className="table-outer">
                         <table className="default-table manage-job-table">
                           <thead>
                             <tr>
-                              <th>Title</th>
+                              <th>Gig Role & Location</th>
+                              <th>Category & Pay Basis</th>
                               <th>Applications</th>
-                              <th>Created & Expired</th>
+                              <th>Created & Deadline</th>
                               <th>Status</th>
                               <th>Action</th>
                             </tr>
                           </thead>
 
                           <tbody>
-                            {jobs.map((job) => {
+                            {filteredJobs.map((job) => {
                               const createdDateStr = job.created_at
-                                ? new Date(job.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                                : 'October 27, 2017';
+                                ? formatIndianDate(job.created_at)
+                                : '—';
                               const expiredDateStr = job.deadline_date
-                                ? new Date(job.deadline_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                                : 'April 25, 2026';
+                                ? formatIndianDate(job.deadline_date)
+                                : 'Open until filled';
                               const locationStr = formatLocation(job);
+                              const salaryStr = formatSalary(job);
                               const isActive = job.status === 'active';
+                              const appCount = typeof job.application_count === 'number' ? job.application_count : 0;
+                              const isToggling = togglingJobId === job.id;
+                              const isDeleting = deletingJobId === job.id;
 
                               return (
                                 <tr key={job.id}>
@@ -244,43 +279,68 @@ const EmployerManageJobsPage = () => {
                                       <i className="icon flaticon-map-locator"></i> {locationStr}
                                     </span>
                                   </td>
+                                  <td>
+                                    <span className="badge bg-light text-dark mb-1 d-inline-block">
+                                      {job.category || 'General'}
+                                    </span>
+                                    <br />
+                                    <span className="fw500 text-primary fz14">
+                                      {salaryStr}
+                                    </span>
+                                  </td>
                                   <td className="applied">
-                                    <Link to="/employer-dashboard/applicants">
-                                      {job.applications || (job.application_count ? `${job.application_count}+ Applied` : '0 Applied')}
+                                    <Link
+                                      to={`/employer-dashboard/applicants?jobId=${job.id}`}
+                                      className="font-weight-bold text-primary"
+                                      title="View applicants for this job"
+                                    >
+                                      {appCount === 1 ? '1 Applicant' : `${appCount} Applicants`}
                                     </Link>
                                   </td>
                                   <td>
-                                    {createdDateStr} <br />
-                                    {expiredDateStr}
+                                    <span className="text-muted fz13">Posted:</span> {createdDateStr} <br />
+                                    <span className="text-muted fz13">Deadline:</span> {expiredDateStr}
                                   </td>
                                   <td
                                     className="status"
-                                    onClick={() => handleToggleStatus(job.id, job.status)}
-                                    style={{ cursor: 'pointer' }}
-                                    title="Click to toggle status"
+                                    onClick={() => !isToggling && handleToggleStatus(job.id, job.status)}
+                                    style={{ cursor: isToggling ? 'wait' : 'pointer' }}
+                                    title="Click to toggle status between Active and Inactive"
                                   >
-                                    {isActive ? 'Active' : 'Inactive'}
+                                    {isToggling ? (
+                                      <span className="spinner-border spinner-border-sm text-secondary"></span>
+                                    ) : (
+                                      <span className={isActive ? 'text-success font-weight-bold' : 'text-muted'}>
+                                        {isActive ? 'Active' : 'Inactive'}
+                                      </span>
+                                    )}
                                   </td>
                                   <td>
                                     <div className="option-box">
                                       <ul className="option-list">
                                         <li>
-                                          <Link to={`/jobs/${job.id}`} data-text="View Aplication">
+                                          <Link to={`/jobs/${job.id}`} title="View Job Details" data-text="View Job">
                                             <span className="la la-eye"></span>
                                           </Link>
                                         </li>
                                         <li>
-                                          <Link to={`/employer-dashboard/edit-job/${job.id}`} data-text="Edit Job">
+                                          <Link to={`/employer-dashboard/edit-job/${job.id}`} title="Edit Job" data-text="Edit Job">
                                             <span className="la la-pencil"></span>
                                           </Link>
                                         </li>
                                         <li>
                                           <button
-                                            data-text="Delete Aplication"
+                                            title="Delete Job"
+                                            data-text="Delete Job"
                                             type="button"
+                                            disabled={isDeleting}
                                             onClick={() => handleDeleteJob(job.id, job.title)}
                                           >
-                                            <span className="la la-trash"></span>
+                                            {isDeleting ? (
+                                              <span className="spinner-border spinner-border-sm"></span>
+                                            ) : (
+                                              <span className="la la-trash text-danger"></span>
+                                            )}
                                           </button>
                                         </li>
                                       </ul>
@@ -304,7 +364,7 @@ const EmployerManageJobsPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

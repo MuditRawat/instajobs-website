@@ -36,25 +36,25 @@ const LatestJobs = () => {
       <div className="auto-container">
         <div className="d-sm-flex align-items-center justify-content-sm-between wow fadeInUp mb-4 mb-sm-0">
           <div className="sec-title">
-            <h2>Latest jobs</h2>
+            <h2>Latest Gigs & Opportunities</h2>
             <div className="text">
-              {totalCount > 0 ? `${totalCount} jobs live` : 'Explore the latest opportunities'}
+              {totalCount > 0 ? `${totalCount} active gigs available` : 'Explore the latest flexible and assignment-based work'}
             </div>
           </div>
           <Link to="/jobs" className="ud-btn-border-theme at-home18 mb-4 dark-style">
-            View All Jobs <i className="fal fa-long-arrow-right"></i>
+            View All Gigs <i className="fal fa-long-arrow-right"></i>
           </Link>
         </div>
         <div className="row wow fadeInUp">
           {loading ? (
             <div className="col-12 text-center py-5">
               <div className="spinner-border text-primary" role="status">
-                <span className="sr-only">Loading latest jobs...</span>
+                <span className="sr-only">Loading latest gigs...</span>
               </div>
             </div>
           ) : jobs.length === 0 ? (
             <div className="col-12 text-center py-4">
-              <p className="text-muted">No active jobs posted yet. Be the first to post a job!</p>
+              <p className="text-muted">No active gigs posted yet. Employers can post flexible gigs or daily shifts anytime!</p>
             </div>
           ) : (
             jobs.map((job, index) => {

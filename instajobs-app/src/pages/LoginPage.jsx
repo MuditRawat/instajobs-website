@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import Header from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
 import { validateAndNormalizeIdentifier } from '../utils/identifierValidator';
@@ -46,6 +46,7 @@ const LoginPage = () => {
   const [message, setMessage] = useState('');
 
   const navigate = useNavigate();
+  const locationState = useLocation();
   const { startAuthxFlow, sendAuthxOtp, verifyAuthxOtp, isAuthenticated, role } = useAuth();
 
   useEffect(() => {
@@ -55,15 +56,16 @@ const LoginPage = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
+      const fromPath = locationState.state?.from;
       if (role === 'admin') {
-        navigate('/admin-dashboard', { replace: true });
+        navigate(fromPath && fromPath.startsWith('/admin') ? fromPath : '/admin-dashboard', { replace: true });
       } else if (role === 'employer') {
-        navigate('/employer-dashboard', { replace: true });
+        navigate(fromPath && fromPath.startsWith('/employer') ? fromPath : '/employer-dashboard', { replace: true });
       } else if (role === 'candidate') {
-        navigate('/candidate-dashboard', { replace: true });
+        navigate(fromPath && fromPath.startsWith('/candidate') ? fromPath : '/candidate-dashboard', { replace: true });
       }
     }
-  }, [isAuthenticated, role, navigate]);
+  }, [isAuthenticated, role, navigate, locationState.state]);
 
   // AuthX Step 1: Start Flow
   const handleStartAuthx = async (e) => {
@@ -199,12 +201,13 @@ const LoginPage = () => {
 
       setMessage('Verification successful! Redirecting...');
       setTimeout(() => {
+        const fromPath = locationState.state?.from;
         if (targetRole === 'admin') {
-          navigate('/admin-dashboard');
+          navigate(fromPath && fromPath.startsWith('/admin') ? fromPath : '/admin-dashboard');
         } else if (targetRole === 'employer') {
-          navigate('/employer-dashboard');
+          navigate(fromPath && fromPath.startsWith('/employer') ? fromPath : '/employer-dashboard');
         } else {
-          navigate('/candidate-dashboard');
+          navigate(fromPath && fromPath.startsWith('/candidate') ? fromPath : '/candidate-dashboard');
         }
       }, 300);
     } catch (err) {
@@ -238,7 +241,7 @@ const LoginPage = () => {
           {/* Login Form */}
           <div className="login-form default-form">
             <div className="form-inner">
-              <h3>Login to Superio</h3>
+              <h3>Login to instajobs</h3>
 
               {message && (
                 <div className="alert alert-success" style={{ marginBottom: '15px', borderRadius: '8px' }}>

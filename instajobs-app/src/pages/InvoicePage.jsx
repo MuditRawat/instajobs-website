@@ -56,7 +56,7 @@ const InvoicePage = () => {
 
                   <div className="info">
                     <h4>Supplier</h4>
-                    <h5>Superio LLC</h5>
+                    <h5>instajobs LLC</h5>
                     <p>2301 Ravenswood Rd Madison, WI 53711</p>
                   </div>
                 </div>
@@ -117,12 +117,12 @@ const InvoicePage = () => {
             <div className="invoice-footer">
               <ul className="bottom-links">
                 <li>
-                  <a href="https://www.superio.com" target="_blank" rel="noreferrer" className="link">
-                    www.superio.com
+                  <a href="https://www.instajobs.com" target="_blank" rel="noreferrer" className="link">
+                    www.instajobs.com
                   </a>
                 </li>
                 <li>
-                  <a href="mailto:invoice@superio.com">invoice@superio.com</a>
+                  <a href="mailto:invoice@instajobs.com">invoice@instajobs.com</a>
                 </li>
                 <li>
                   <a href="tel:123123456">(123) 123-456</a>

@@ -96,6 +96,24 @@ class JobService {
       sanitizedPayload.deadline_date = normalizeDeadlineDate(sanitizedPayload.deadline_date);
     }
 
+    // AI Interview feature toggle validation
+    if (Object.prototype.hasOwnProperty.call(jobData, 'ai_interview_enabled')) {
+      const requestedAiInterview = Boolean(jobData.ai_interview_enabled);
+      if (requestedAiInterview) {
+        if (!employerProfile.ai_interview_enabled) {
+          const err = new Error('AI Interview feature is not enabled for your employer account. Please contact an administrator to request access.');
+          err.statusCode = 403;
+          err.code = 'AI_INTERVIEW_ACCESS_DISABLED';
+          throw err;
+        }
+        sanitizedPayload.ai_interview_enabled = true;
+      } else {
+        sanitizedPayload.ai_interview_enabled = false;
+      }
+    } else {
+      sanitizedPayload.ai_interview_enabled = false;
+    }
+
     const { data, error } = await supabase
       .from('jobs')
       .insert([sanitizedPayload])
@@ -110,14 +128,14 @@ class JobService {
   }
 
   /**
-   * Get all non-deleted jobs for the authenticated employer
+   * Get all non-deleted jobs for the authenticated employer, including real application counts
    * @param {string} userId - Authenticated user ID
-   * @returns {Promise<Array>} List of employer jobs
+   * @returns {Promise<Array>} List of employer jobs with application_count
    */
   static async getEmployerJobs(userId) {
     const employerProfile = await this.getEmployerProfileByUserId(userId);
 
-    const { data, error } = await supabase
+    const { data: jobs, error } = await supabase
       .from('jobs')
       .select('*')
       .eq('employer_id', employerProfile.id)
@@ -128,7 +146,35 @@ class JobService {
       throw new Error(`Database error fetching employer jobs: ${error.message}`);
     }
 
-    return data || [];
+    if (!jobs || jobs.length === 0) {
+      return [];
+    }
+
+    // Aggregate authentic application counts for this employer's jobs
+    const jobIds = jobs.map((j) => j.id);
+    const countMap = {};
+
+    try {
+      const { data: apps, error: appErr } = await supabase
+        .from('job_applications')
+        .select('job_id')
+        .in('job_id', jobIds);
+
+      if (!appErr && Array.isArray(apps)) {
+        for (const app of apps) {
+          if (app.job_id) {
+            countMap[app.job_id] = (countMap[app.job_id] || 0) + 1;
+          }
+        }
+      }
+    } catch (countError) {
+      console.warn('[getEmployerJobs] Notice: failed to aggregate application counts:', countError.message);
+    }
+
+    return jobs.map((job) => ({
+      ...job,
+      application_count: countMap[job.id] || 0
+    }));
   }
 
   /**
@@ -201,6 +247,23 @@ class JobService {
 
     if (Object.prototype.hasOwnProperty.call(sanitizedData, 'deadline_date')) {
       sanitizedData.deadline_date = normalizeDeadlineDate(sanitizedData.deadline_date);
+    }
+
+    // AI Interview feature toggle validation on update
+    if (Object.prototype.hasOwnProperty.call(updateData, 'ai_interview_enabled')) {
+      const requestedAiInterview = Boolean(updateData.ai_interview_enabled);
+      if (requestedAiInterview) {
+        const employerProfile = await this.getEmployerProfileByUserId(userId);
+        if (!employerProfile.ai_interview_enabled) {
+          const err = new Error('AI Interview feature is not enabled for your employer account. Please contact an administrator to request access.');
+          err.statusCode = 403;
+          err.code = 'AI_INTERVIEW_ACCESS_DISABLED';
+          throw err;
+        }
+        sanitizedData.ai_interview_enabled = true;
+      } else {
+        sanitizedData.ai_interview_enabled = false;
+      }
     }
 
     sanitizedData.updated_at = new Date().toISOString();
@@ -341,17 +404,31 @@ class JobService {
       .eq('status', 'active')
       .is('deleted_at', null);
 
+    // Filter out expired jobs where deadline_date is before today
+    const todayIso = new Date().toISOString().split('T')[0];
+    query = query.or(`deadline_date.is.null,deadline_date.gte.${todayIso}`);
+
     if (category) {
       query = query.eq('category', category);
     }
     if (job_type) {
-      query = query.eq('job_type', job_type);
+      if (Array.isArray(job_type)) {
+        query = query.in('job_type', job_type);
+      } else if (typeof job_type === 'string' && job_type.includes(',')) {
+        const types = job_type.split(',').map((t) => t.trim()).filter(Boolean);
+        query = query.in('job_type', types);
+      } else {
+        query = query.eq('job_type', job_type);
+      }
+    }
+    if (filters.salary_rate) {
+      query = query.eq('salary_rate', filters.salary_rate);
     }
     if (country) {
       query = query.ilike('country', `%${country}%`);
     }
     if (city) {
-      query = query.ilike('city', `%${city}%`);
+      query = query.or(`city.ilike.%${city}%,address.ilike.%${city}%`);
     }
     if (career_level) {
       query = query.eq('career_level', career_level);
@@ -385,7 +462,7 @@ class JobService {
     }
     if (keyword && keyword.trim()) {
       const kw = keyword.trim();
-      query = query.or(`title.ilike.%${kw}%,description.ilike.%${kw}%,category.ilike.%${kw}%`);
+      query = query.or(`title.ilike.%${kw}%,description.ilike.%${kw}%,category.ilike.%${kw}%,city.ilike.%${kw}%`);
     }
 
     if (sort === 'salary_desc') {
@@ -462,6 +539,16 @@ class JobService {
 
     if (error) {
       throw new Error(`Database error fetching public job by ID: ${error.message}`);
+    }
+
+    if (!data) return null;
+
+    // Check if job is expired
+    if (data.deadline_date) {
+      const todayIso = new Date().toISOString().split('T')[0];
+      if (data.deadline_date < todayIso) {
+        return null;
+      }
     }
 
     return data;

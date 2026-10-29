@@ -1,28 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { jobService } from '../../services/jobService';
+import { GIG_CATEGORIES } from '../../constants/gigTaxonomy';
 
 const CATEGORY_ICON_MAP = {
+  'delivery, logistics & courier': 'flaticon-delivery-truck',
+  'drivers & transport': 'flaticon-car',
+  'housekeeping, cleaning & domestic help': 'flaticon-clean',
+  'technicians, electricians & repair': 'flaticon-wrench',
+  'restaurant, hospitality & catering': 'flaticon-chef',
+  'retail, warehouse & packing': 'flaticon-boxes',
+  'event staff & temporary promotion': 'flaticon-megaphone',
+  'moving, loading & physical labor': 'flaticon-package',
+  'tutors, trainers & home services': 'flaticon-graduation-cap',
+  'digital freelance, design & online tasks': 'flaticon-laptop',
   'accounting / finance': 'flaticon-money-1',
-  'accounting': 'flaticon-money-1',
-  'finance': 'flaticon-money-1',
+  'development': 'flaticon-web-programming',
   'marketing': 'flaticon-promotion',
   'design': 'flaticon-vector',
-  'digital & creative': 'flaticon-vector',
-  'digital&creative': 'flaticon-vector',
-  'development': 'flaticon-web-programming',
-  'human resource': 'flaticon-headhunting',
-  'human resources': 'flaticon-headhunting',
-  'project management': 'flaticon-rocket-ship',
-  'management': 'flaticon-rocket-ship',
-  'customer service': 'flaticon-support-1',
   'customer': 'flaticon-support-1',
   'health and care': 'flaticon-first-aid-kit-1',
-  'healthcare': 'flaticon-first-aid-kit-1',
-  'automotive jobs': 'flaticon-car',
-  'automotive': 'flaticon-car',
-  'banking': 'flaticon-money-1',
-  'retail': 'flaticon-briefcase',
+  'project management': 'flaticon-rocket-ship',
+  'automotive jobs': 'flaticon-car'
 };
 
 const DEFAULT_ICON = 'flaticon-briefcase';
@@ -44,13 +43,25 @@ const JobCategories = () => {
       try {
         setLoading(true);
         const res = await jobService.getJobCategories();
-        if (res.success) {
-          setCategories(res.categories || []);
+        if (res.success && res.categories && res.categories.length > 0) {
+          setCategories(res.categories);
           setTotalJobs(res.totalJobs || 0);
           setJobsAddedToday(res.jobsAddedToday || 0);
+        } else {
+          // If no jobs yet, show canonical gig categories with 0 count
+          setCategories(GIG_CATEGORIES.map((c) => ({
+            name: c.value,
+            shortLabel: c.shortLabel,
+            count: 0
+          })));
         }
       } catch (err) {
         console.error('Error fetching popular job categories:', err);
+        setCategories(GIG_CATEGORIES.map((c) => ({
+          name: c.value,
+          shortLabel: c.shortLabel,
+          count: 0
+        })));
       } finally {
         setLoading(false);
       }
@@ -64,11 +75,11 @@ const JobCategories = () => {
       <div className="auto-container">
         <div className="d-sm-flex align-items-center justify-content-sm-between wow fadeInUp">
           <div className="sec-title">
-            <h2>Popular Job Categories</h2>
+            <h2>Popular Gig & Work Categories</h2>
             <div className="text">
               {totalJobs > 0
-                ? `${totalJobs} job${totalJobs === 1 ? '' : 's'} live${jobsAddedToday > 0 ? ` - ${jobsAddedToday} added today` : ''}.`
-                : 'Explore job opportunities across diverse industries.'}
+                ? `${totalJobs} gig position${totalJobs === 1 ? '' : 's'} live${jobsAddedToday > 0 ? ` - ${jobsAddedToday} added today` : ''}.`
+                : 'Explore high-demand flexible shifts, local services, and digital gig roles across India.'}
             </div>
           </div>
           <Link to="/jobs" className="ud-btn-border-theme at-home18 mb-4">

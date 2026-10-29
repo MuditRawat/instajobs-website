@@ -15,12 +15,26 @@ const {
   updateProfile,
   uploadLogo,
   uploadCover,
-  deleteProfile
+  deleteProfile,
+  getProfileViews,
+  getEmployerShortlists,
+  getEmployerStats
 } = require('../controllers/employerProfileController');
 
-// Protected Employer Profile Endpoints
+const {
+  getEmployerApplicants,
+  getApplicationCv,
+  toggleApplicationShortlist,
+  updateApplicationStatus
+} = require('../controllers/applicationController');
+
+// Protected Employer Profile & Stats Endpoints
 router.get('/profile', unifiedAuthMiddleware, getProfile);
+router.get('/dashboard/stats', unifiedAuthMiddleware, getEmployerStats);
+router.get('/stats', unifiedAuthMiddleware, getEmployerStats);
 router.put('/profile', unifiedAuthMiddleware, updateProfile);
+router.get('/profile-views', unifiedAuthMiddleware, getProfileViews);
+router.get('/shortlists', unifiedAuthMiddleware, getEmployerShortlists);
 router.delete('/profile', unifiedAuthMiddleware, deleteProfile);
 router.delete('/account', unifiedAuthMiddleware, deleteProfile);
 
@@ -39,4 +53,13 @@ router.put('/jobs/:id', unifiedAuthMiddleware, updateJob);
 router.patch('/jobs/:id/status', unifiedAuthMiddleware, updateJobStatus);
 router.delete('/jobs/:id', unifiedAuthMiddleware, deleteJob);
 
+// Protected Employer Job Applicants Endpoints
+router.get('/jobs/:id/applicants', unifiedAuthMiddleware, getEmployerApplicants);
+router.get('/applicants', unifiedAuthMiddleware, getEmployerApplicants);
+router.get('/applications/:id/cv', unifiedAuthMiddleware, getApplicationCv);
+router.patch('/applications/:id/status', unifiedAuthMiddleware, updateApplicationStatus);
+router.post('/applications/:id/shortlist', unifiedAuthMiddleware, toggleApplicationShortlist);
+router.delete('/applications/:id/shortlist', unifiedAuthMiddleware, toggleApplicationShortlist);
+
 module.exports = router;
+

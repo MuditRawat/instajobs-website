@@ -224,6 +224,232 @@ class CandidateProfileService {
       message: 'Candidate account and profile deleted successfully.'
     };
   }
+
+  /**
+   * Get monthly profile views aggregated over the last N months (default 6)
+   * Safely handles case where candidate_profile_views table does not exist yet.
+   * @param {string} userId
+   * @param {number} monthsCount
+   * @returns {Promise<Array<{ month: string, year: number, count: number }>>}
+   */
+  static async getMonthlyProfileViews(userId, monthsCount = 6) {
+    if (!supabase) {
+      throw new Error('Supabase database client is not configured.');
+    }
+
+    if (!userId) {
+      throw new Error('User ID is required.');
+    }
+
+    // Resolve candidate profile ID
+    const { data: profile } = await supabase
+      .from('candidate_profiles')
+      .select('id')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    // Prepare list of past N calendar months in chronological order
+    const months = [];
+    const now = new Date();
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        month: monthNames[d.getMonth()],
+        monthIndex: d.getMonth(),
+        year: d.getFullYear(),
+        count: 0
+      });
+    }
+
+    if (!profile) {
+      return months.map(({ month, year, count }) => ({ month, year, count }));
+    }
+
+    try {
+      const startDate = new Date(now.getFullYear(), now.getMonth() - (monthsCount - 1), 1).toISOString();
+
+      const { data: views, error } = await supabase
+        .from('candidate_profile_views')
+        .select('viewed_at')
+        .eq('candidate_id', profile.id)
+        .gte('viewed_at', startDate);
+
+      if (!error && Array.isArray(views)) {
+        views.forEach((v) => {
+          if (!v.viewed_at) return;
+          const vDate = new Date(v.viewed_at);
+          const vMonth = vDate.getMonth();
+          const vYear = vDate.getFullYear();
+
+          const target = months.find((m) => m.monthIndex === vMonth && m.year === vYear);
+          if (target) {
+            target.count += 1;
+          }
+        });
+      }
+    } catch (err) {
+      // If table candidate_profile_views is not yet created, return valid zeroes rather than crash
+      console.warn('[getMonthlyProfileViews] Table lookup warning (views default to 0):', err.message);
+    }
+
+    return months.map(({ month, year, count }) => ({ month, year, count }));
+  }
+
+  /**
+   * Get all saved jobs for a candidate
+   * @param {string} userId
+   * @returns {Promise<Array>}
+   */
+  static async getSavedJobs(userId) {
+    const profile = await this.getCandidateProfile(userId);
+    if (!profile) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('candidate_saved_jobs')
+        .select(`
+          id,
+          job_id,
+          created_at,
+          job:jobs (
+            id,
+            title,
+            job_type,
+            salary_min,
+            salary_max,
+            salary_rate,
+            city,
+            state,
+            country,
+            is_remote,
+            deadline_date,
+            created_at,
+            employer_id,
+            employer_profile:employer_profiles (
+              id,
+              company_name,
+              logo_url,
+              city,
+              country
+            )
+          )
+        `)
+        .eq('candidate_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.warn('[getSavedJobs] candidate_saved_jobs query warning:', error.message);
+        return [];
+      }
+
+      return Array.isArray(data) ? data : [];
+    } catch (err) {
+      console.warn('[getSavedJobs] Table lookup warning:', err.message);
+      return [];
+    }
+  }
+
+  /**
+   * Save / bookmark a job for a candidate
+   * @param {string} userId
+   * @param {string} jobId
+   * @returns {Promise<Object>}
+   */
+  static async saveJob(userId, jobId) {
+    const profile = await this.getCandidateProfile(userId);
+    if (!profile) {
+      throw new Error('Candidate profile not found.');
+    }
+
+    // Verify job exists
+    const { data: job, error: jobErr } = await supabase
+      .from('jobs')
+      .select('id, title')
+      .eq('id', jobId)
+      .single();
+
+    if (jobErr || !job) {
+      throw new Error('Job not found.');
+    }
+
+    const { data, error } = await supabase
+      .from('candidate_saved_jobs')
+      .upsert(
+        { candidate_id: profile.id, job_id: jobId },
+        { onConflict: 'candidate_id,job_id' }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message || 'Failed to save job.');
+    }
+
+    return data;
+  }
+
+  /**
+   * Remove a saved job for a candidate
+   * @param {string} userId
+   * @param {string} jobId
+   * @returns {Promise<boolean>}
+   */
+  static async unsaveJob(userId, jobId) {
+    const profile = await this.getCandidateProfile(userId);
+    if (!profile) {
+      throw new Error('Candidate profile not found.');
+    }
+
+    const { error } = await supabase
+      .from('candidate_saved_jobs')
+      .delete()
+      .eq('candidate_id', profile.id)
+      .eq('job_id', jobId);
+
+    if (error) {
+      throw new Error(error.message || 'Failed to remove saved job.');
+    }
+
+    return true;
+  }
+
+  /**
+   * Get Candidate Packages / Career Plans
+   * Queries real candidate packages from Supabase if table exists.
+   * If table does not exist or has no rows, safely returns empty array.
+   * @param {string} userId
+   * @returns {Promise<Array>}
+   */
+  static async getCandidatePackages(userId) {
+    const profile = await this.getCandidateProfile(userId);
+    if (!profile) {
+      return [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('candidate_packages')
+        .select('*')
+        .eq('candidate_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        // Table may not yet be migrated in database; return empty list instead of failing or mocking
+        return [];
+      }
+
+      return data || [];
+    } catch (err) {
+      return [];
+    }
+  }
 }
 
 module.exports = CandidateProfileService;

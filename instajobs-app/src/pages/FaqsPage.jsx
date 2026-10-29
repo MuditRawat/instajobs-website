@@ -1,388 +1,170 @@
-import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
+import Footer from '../components/common/Footer';
+import { contentService } from '../services/contentService';
 
 const FaqsPage = () => {
-  const location = useLocation();
+  const [faqData, setFaqData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeFaqKey, setActiveFaqKey] = useState(null); // 'catIdx-itemIdx'
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // Initialize WOW.js for scroll reveal animations matching script.js line 1066
-    if (window.WOW) {
-      const wow = new window.WOW({
-        boxClass: 'wow',
-        animateClass: 'animated',
-        offset: 0,
-        mobile: false,
-        live: true
-      });
-      wow.init();
-    }
-
-    // Bind Accordion Box click handlers matching script.js line 839
-    if (window.jQuery) {
-      const $ = window.jQuery;
-
-      $('.accordion-box').off('click', '.acc-btn').on('click', '.acc-btn', function (e) {
-        e.preventDefault();
-        var outerBox = $(this).parents('.accordion-box');
-        var target = $(this).parents('.accordion');
-
-        if ($(this).hasClass('active') !== true) {
-          $(outerBox).find('.accordion .acc-btn').removeClass('active');
+    const loadFaqs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await contentService.getFaqs();
+        setFaqData(data);
+        // Default open the first FAQ in the first category
+        if (data?.categories?.length > 0 && data.categories[0].items?.length > 0) {
+          setActiveFaqKey('0-0');
         }
+      } catch (err) {
+        console.error('Error loading FAQs:', err);
+        setError(err.message || 'Failed to load FAQ answers.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-        if ($(this).next('.acc-content').is(':visible')) {
-          return false;
-        } else {
-          $(this).addClass('active');
-          $(outerBox).children('.accordion').removeClass('active-block');
-          $(outerBox).find('.accordion').children('.acc-content').slideUp(300);
-          target.addClass('active-block');
-          $(this).next('.acc-content').slideDown(300);
-        }
-      });
-    }
+    loadFaqs();
   }, []);
+
+  const toggleAccordion = (key) => {
+    setActiveFaqKey((prev) => (prev === key ? null : key));
+  };
 
   return (
     <div className="page-wrapper">
       <span className="header-span"></span>
       <Header />
 
-      {/* Faqs Section matching superio-html/faqs.html line 292 */}
+      {/* Faqs Page Title */}
+      <section className="page-title">
+        <div className="auto-container">
+          <div className="title-outer">
+            <h1>Frequently Asked Questions</h1>
+            <ul className="page-breadcrumb">
+              <li>
+                <Link to="/">Home</Link>
+              </li>{' '}
+              <li>FAQs</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      {/* Faqs Section */}
       <section className="faqs-section">
         <div className="auto-container">
           <div className="sec-title text-center">
             <h2>Frequently Asked Questions</h2>
-            <div className="text">Home / Faq</div>
+            <div className="text">Clear answers regarding candidate applications, employer postings, and platform usage</div>
           </div>
 
-          <h3>Payments</h3>
-          {/* Accordion Box - Payments */}
-          <ul className="accordion-box">
-            {/* Block 1 - Active by default */}
-            <li className="accordion block active-block">
-              <div className="acc-btn active">
-                Why won't my payment go through? <span className="icon flaticon-add"></span>
+          {loading ? (
+            <div className="text-center py-5" style={{ minHeight: '40vh' }}>
+              <div className="spinner-border text-primary" role="status">
+                <span className="sr-only">Loading FAQs...</span>
               </div>
-              <div className="acc-content current" style={{ display: 'block' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
+            </div>
+          ) : error && !faqData ? (
+            <div className="alert alert-danger text-center my-5 py-4">
+              <h4>Unable to load FAQs</h4>
+              <p className="text-muted">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="theme-btn btn-style-one mt-3"
+              >
+                Retry
+              </button>
+            </div>
+          ) : faqData?.categories?.length === 0 ? (
+            <div className="text-center py-5 text-muted">
+              <p>No FAQ items currently available. Check back soon.</p>
+            </div>
+          ) : (
+            faqData.categories.map((catGroup, catIdx) => (
+              <div key={catIdx} className="mb-5">
+                <h3 className="mb-4 font-weight-bold" style={{ color: '#202124', borderBottom: '2px solid #ECEDF2', paddingBottom: '10px' }}>
+                  {catGroup.category}
+                </h3>
 
-            {/* Block 2 */}
-            <li className="accordion block">
-              <div className="acc-btn">
-                How do I get a refund? <span className="icon flaticon-add"></span>
-              </div>
-              <div className="acc-content" style={{ display: 'none' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
+                <ul className="accordion-box">
+                  {catGroup.items.map((item, itemIdx) => {
+                    const key = `${catIdx}-${itemIdx}`;
+                    const isOpen = activeFaqKey === key;
 
-            {/* Block 3 */}
-            <li className="accordion block">
-              <div className="acc-btn">
-                How do I redeem a coupon? <span className="icon flaticon-add"></span>
+                    return (
+                      <li
+                        key={item.id || key}
+                        className={`accordion block ${isOpen ? 'active-block' : ''}`}
+                        style={{ marginBottom: '15px' }}
+                      >
+                        <div
+                          className={`acc-btn ${isOpen ? 'active' : ''}`}
+                          onClick={() => toggleAccordion(key)}
+                          style={{
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            userSelect: 'none'
+                          }}
+                        >
+                          <span className="font-weight-bold">{item.question}</span>
+                          <span
+                            className={`icon ${isOpen ? 'flaticon-up-arrow' : 'flaticon-add'}`}
+                            style={{
+                              transform: isOpen ? 'rotate(45deg)' : 'none',
+                              transition: 'transform 0.2s ease',
+                              fontSize: '14px'
+                            }}
+                          ></span>
+                        </div>
+                        {isOpen && (
+                          <div className="acc-content current" style={{ display: 'block' }}>
+                            <div className="content" style={{ padding: '20px 25px' }}>
+                              <p style={{ fontSize: '15px', lineHeight: '26px', color: '#696969', margin: 0 }}>
+                                {item.answer}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-              <div className="acc-content" style={{ display: 'none' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
+            ))
+          )}
 
-            {/* Block 4 */}
-            <li className="accordion block">
-              <div className="acc-btn">
-                Changing account name <span className="icon flaticon-add"></span>
-              </div>
-              <div className="acc-content" style={{ display: 'none' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
-          </ul>
-
-          <h3>Suggestions</h3>
-          {/* Accordion Box - Suggestions */}
-          <ul className="accordion-box">
-            {/* Block 1 - Active by default */}
-            <li className="accordion block active-block">
-              <div className="acc-btn active">
-                Why won't my payment go through? <span className="icon flaticon-add"></span>
-              </div>
-              <div className="acc-content current" style={{ display: 'block' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
-
-            {/* Block 2 */}
-            <li className="accordion block">
-              <div className="acc-btn">
-                How do I get a refund? <span className="icon flaticon-add"></span>
-              </div>
-              <div className="acc-content" style={{ display: 'none' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
-
-            {/* Block 3 */}
-            <li className="accordion block">
-              <div className="acc-btn">
-                How do I redeem a coupon? <span className="icon flaticon-add"></span>
-              </div>
-              <div className="acc-content" style={{ display: 'none' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
-
-            {/* Block 4 */}
-            <li className="accordion block">
-              <div className="acc-btn">
-                Changing account name <span className="icon flaticon-add"></span>
-              </div>
-              <div className="acc-content" style={{ display: 'none' }}>
-                <div className="content">
-                  <p>
-                    Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed
-                    et, vel diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed
-                    pretium. Aliquam eget posuere sit enim elementum nulla vulputate magna. Morbi sed
-                    arcu proin quis tortor non risus.
-                  </p>
-                  <p>
-                    Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus.
-                  </p>
-                </div>
-              </div>
-            </li>
-          </ul>
+          {/* Contact Support Prompt */}
+          <div className="call-to-action-two mt-5 rounded" style={{ backgroundColor: '#F5F7FC', padding: '40px 30px' }}>
+            <div className="text-center">
+              <h4 className="font-weight-bold mb-2">Still have questions?</h4>
+              <p className="text-muted mb-4">
+                Our support team is ready to assist candidates and employers with any questions.
+              </p>
+              <a
+                href="https://mail.google.com/mail/?view=cm&to=support%40instajobs.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="theme-btn btn-style-one"
+              >
+                Contact Support (support@instajobs.in)
+              </a>
+            </div>
+          </div>
         </div>
       </section>
-      {/* End Faqs Section */}
 
-      {/* Main Footer alternate5 */}
-      <footer className="main-footer alternate5">
-        <div className="auto-container">
-          <div className="widgets-section">
-            <div className="row">
-              <div className="big-column col-xl-4 col-lg-3 col-md-12">
-                <div className="footer-column about-widget">
-                  <div className="logo">
-                    <Link to="/">
-                      <img src="/images/logo.svg" alt="" />
-                    </Link>
-                  </div>
-                  <p className="phone-num">
-                    <span>Call us </span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </p>
-                  <p className="address">
-                    329 Queensberry Street, North Melbourne VIC
-                    <br /> 3051, Australia. <br />
-                    <a href="mailto:support@superio.com" className="email">
-                      support@superio.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="big-column col-xl-8 col-lg-9 col-md-12">
-                <div className="row">
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Candidates</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/jobs">Browse Jobs</Link>
-                          </li>
-                          <li>
-                            <Link to="/jobs">Browse Categories</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard">Candidate Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/job-alerts">Job Alerts</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/shortlisted-jobs">My Bookmarks</Link>
-                          </li>
-                          <li>
-                            <Link to="/pricing">Job Packages</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Employers</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Browse Candidates</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard">Employer Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard/post-job">Add Job</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">About Us</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/about">About Us</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/blogs">Blog</Link>
-                          </li>
-                          <li>
-                            <Link to="/contact">Contact</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">Helpful Resources</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Site Map</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms of Use</Link>
-                          </li>
-                          <li>
-                            <Link to={location.pathname} onClick={(e) => e.preventDefault()}>Privacy Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Security Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Accessibility Center</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <div className="auto-container">
-            <div className="outer-box">
-              <div className="copyright-text">
-                © 2021 <Link to="/">Superio</Link>. All Right Reserved.
-              </div>
-              <div className="social-links">
-                <a href="#">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Main Footer */}
+      <Footer />
     </div>
   );
 };

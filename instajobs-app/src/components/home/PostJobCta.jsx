@@ -8,12 +8,12 @@ const PostJobCta = () => {
       <div className="auto-container">
         <div className="content-wrapper wow fadeInRight">
           <div className="sec-title mb-0">
-            <h2>Looking to Post a Job</h2>
+            <h2>Looking to Hire Gig Workers?</h2>
             <div className="text mb-4">
-              Find professionals from arround the world and <br className="d-none d-lg-block" /> across all skills.
+              Connect with verified workers, drivers, delivery crew, and skilled specialists <br className="d-none d-lg-block" /> across major cities and localities in India.
             </div>
             <RoleAwareLink to="/employer-dashboard/post-job" targetRole="employer" className="ud-btn-border-theme at-home18 dark-style">
-              Post Your Job For Free <i className="fal fa-long-arrow-right"></i>
+              Post a Gig for Free <i className="fal fa-long-arrow-right"></i>
             </RoleAwareLink>
           </div>
         </div>

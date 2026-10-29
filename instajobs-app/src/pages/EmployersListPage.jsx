@@ -1,7 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Header from '../components/common/Header';
+import Footer from '../components/common/Footer';
+import { employerService } from '../services/employerService';
+import { GIG_CATEGORIES } from '../constants/gigTaxonomy';
 
+/*
 const employersData = [
   {
     id: 1,
@@ -78,9 +82,63 @@ const employersData = [
     openJobs: 'Open Jobs – 2',
   },
 ];
+*/
 
 const EmployersListPage = () => {
   const location = useLocation();
+
+  // Dynamic state
+  const [employers, setEmployers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [totalEmployers, setTotalEmployers] = useState(0);
+
+  // Filters state
+  const [keyword, setKeyword] = useState('');
+  const [locationFilter, setLocationFilter] = useState('');
+  const [category, setCategory] = useState('');
+  const [teamSize, setTeamSize] = useState('');
+  const [estSinceRange, setEstSinceRange] = useState([1900, 2026]);
+  const [sortBy, setSortBy] = useState('recent');
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+
+  // Fetch real employers from backend
+  const fetchEmployers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const res = await employerService.getPublicEmployers({
+        keyword: keyword.trim() || undefined,
+        location: locationFilter.trim() || undefined,
+        category: category || undefined,
+        team_size: teamSize || undefined,
+        est_since_min: estSinceRange[0] !== 1900 ? estSinceRange[0] : undefined,
+        est_since_max: estSinceRange[1] !== 2026 ? estSinceRange[1] : undefined,
+        sort: sortBy,
+        limit: pageSize * page,
+        offset: 0
+      });
+
+      if (res && res.success) {
+        setEmployers(res.employers || []);
+        setTotalEmployers(res.total || 0);
+      } else {
+        setEmployers([]);
+        setTotalEmployers(0);
+      }
+    } catch (err) {
+      console.error('[EmployersListPage] Error loading employers:', err);
+      setError(err.message || 'Failed to load employers. Please try again.');
+      setEmployers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchEmployers();
+  }, [keyword, locationFilter, category, teamSize, estSinceRange, sortBy, pageSize, page]);
   useEffect(() => {
     window.scrollTo(0, 0);
 
@@ -183,7 +241,12 @@ const EmployersListPage = () => {
                       <input
                         type="text"
                         name="listing-search"
-                        placeholder="Job title, keywords, or company"
+                        placeholder="Company name, keyword..."
+                        value={keyword}
+                        onChange={(e) => {
+                          setKeyword(e.target.value);
+                          setPage(1);
+                        }}
                       />
                       <span className="icon flaticon-search-3"></span>
                     </div>
@@ -193,17 +256,17 @@ const EmployersListPage = () => {
                   <div className="filter-block">
                     <h4>Location</h4>
                     <div className="form-group">
-                      <input type="text" name="listing-search" placeholder="City or postcode" />
+                      <input
+                        type="text"
+                        name="listing-search"
+                        placeholder="City or state"
+                        value={locationFilter}
+                        onChange={(e) => {
+                          setLocationFilter(e.target.value);
+                          setPage(1);
+                        }}
+                      />
                       <span className="icon flaticon-map-locator"></span>
-                    </div>
-                    <p>Radius around selected destination</p>
-                    <div className="range-slider-one">
-                      <div className="area-range-slider"></div>
-                      <div className="input-outer">
-                        <div className="amount-outer">
-                          <span className="area-amount"></span>km
-                        </div>
-                      </div>
                     </div>
                   </div>
 
@@ -211,12 +274,20 @@ const EmployersListPage = () => {
                   <div className="filter-block">
                     <h4>Category</h4>
                     <div className="form-group">
-                      <select className="chosen-select">
-                        <option>Choose a category</option>
-                        <option>Residential</option>
-                        <option>Commercial</option>
-                        <option>Industrial</option>
-                        <option>Apartments</option>
+                      <select
+                        className="chosen-select"
+                        value={category}
+                        onChange={(e) => {
+                          setCategory(e.target.value);
+                          setPage(1);
+                        }}
+                      >
+                        <option value="">All Categories</option>
+                        {GIG_CATEGORIES.map((cat) => (
+                          <option key={cat.id} value={cat.value}>
+                            {cat.label}
+                          </option>
+                        ))}
                       </select>
                       <span className="icon flaticon-briefcase"></span>
                     </div>
@@ -226,12 +297,21 @@ const EmployersListPage = () => {
                   <div className="filter-block">
                     <h4>Company Size</h4>
                     <div className="form-group">
-                      <select className="chosen-select">
-                        <option>1-100 Members</option>
-                        <option>100-200 Members</option>
-                        <option>200-500 Members</option>
-                        <option>500-1000 Members</option>
-                        <option>1000-10000 Members</option>
+                      <select
+                        className="chosen-select"
+                        value={teamSize}
+                        onChange={(e) => {
+                          setTeamSize(e.target.value);
+                          setPage(1);
+                        }}
+                      >
+                        <option value="">All Sizes</option>
+                        <option value="1-50">1-50 Members</option>
+                        <option value="50-100">50-100 Members</option>
+                        <option value="100-200">100-200 Members</option>
+                        <option value="200-500">200-500 Members</option>
+                        <option value="500-1000">500-1000 Members</option>
+                        <option value="1000+">1000+ Members</option>
                       </select>
                       <span className="icon flaticon-briefcase"></span>
                     </div>
@@ -280,234 +360,152 @@ const EmployersListPage = () => {
                 <div className="ls-switcher">
                   <div className="showing-result">
                     <div className="text">
-                      Showing <strong>41-60</strong> of <strong>944</strong> employer
+                      Showing <strong>{employers.length}</strong> of <strong>{totalEmployers}</strong> {totalEmployers === 1 ? 'employer' : 'employers'}
                     </div>
                   </div>
                   <div className="sort-by">
-                    <select className="chosen-select">
-                      <option>Most Recent</option>
-                      <option>Freelance</option>
-                      <option>Full Time</option>
-                      <option>Internship</option>
-                      <option>Part Time</option>
-                      <option>Temporary</option>
+                    <select
+                      className="chosen-select"
+                      value={sortBy}
+                      onChange={(e) => {
+                        setSortBy(e.target.value);
+                        setPage(1);
+                      }}
+                    >
+                      <option value="recent">Most Recent</option>
+                      <option value="name_asc">Name (A-Z)</option>
+                      <option value="name_desc">Name (Z-A)</option>
+                      <option value="oldest">Oldest</option>
                     </select>
 
-                    <select className="chosen-select">
-                      <option>Show 10</option>
-                      <option>Show 20</option>
-                      <option>Show 30</option>
-                      <option>Show 40</option>
-                      <option>Show 50</option>
-                      <option>Show 60</option>
+                    <select
+                      className="chosen-select"
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(1);
+                      }}
+                    >
+                      <option value={10}>Show 10</option>
+                      <option value={20}>Show 20</option>
+                      <option value={30}>Show 30</option>
+                      <option value={50}>Show 50</option>
                     </select>
                   </div>
                 </div>
 
-                {/* Company Cards */}
-                {employersData.map((emp) => (
-                  <div key={emp.id} className="company-block-three">
-                    <div className="inner-box">
-                      <div className="content">
-                        <div className="content-inner">
-                          <span className="company-logo">
-                            <img src={emp.logo} alt="" />
-                          </span>
-                          <h4>
-                            <Link to={`/employers/${emp.id}`}>{emp.name}</Link>
-                          </h4>
-                          <ul className="job-info">
-                            <li>
-                              <span className="icon flaticon-map-locator"></span> {emp.location}
-                            </li>
-                            <li>
-                              <span className="icon flaticon-briefcase"></span> {emp.category}
-                            </li>
-                          </ul>
-                        </div>
-
-                        <ul className="job-other-info">
-                          {emp.featured && <li className="privacy">Featured</li>}
-                          <li className="time">{emp.openJobs}</li>
-                        </ul>
-                      </div>
-
-                      {emp.description && <div className="text">{emp.description}</div>}
-                      <button className="bookmark-btn">
-                        <span className="flaticon-bookmark"></span>
-                      </button>
+                {/* Company Cards & States */}
+                {loading && employers.length === 0 ? (
+                  <div className="text-center py-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="sr-only">Loading employers...</span>
                     </div>
                   </div>
-                ))}
+                ) : error ? (
+                  <div className="alert alert-danger my-4" role="alert">
+                    <p className="mb-0">{error}</p>
+                    <button
+                      className="btn btn-sm btn-outline-danger mt-2"
+                      onClick={() => fetchEmployers()}
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : employers.length === 0 ? (
+                  <div className="text-center py-5 my-4 bg-light rounded">
+                    <h5>No employers found</h5>
+                    <p className="text-muted mb-0">
+                      {keyword || locationFilter || category || teamSize
+                        ? 'Try adjusting your search criteria or clearing filters.'
+                        : 'No active employers are currently listed.'}
+                    </p>
+                  </div>
+                ) : (
+                  employers.map((emp) => {
+                    const companyName = emp.company_name || 'Employer';
+                    const locationStr = [emp.city, emp.country].filter(Boolean).join(', ') || 'Flexible Location';
+                    const categoriesList = Array.isArray(emp.categories) && emp.categories.length > 0
+                      ? emp.categories.join(', ')
+                      : emp.category || null;
+                    const openJobsText = emp.open_jobs_count > 0 ? `Open Jobs – ${emp.open_jobs_count}` : null;
+                    const logoSrc = emp.logo_url || '/images/resource/company-logo/1-1.png';
+
+                    return (
+                      <div key={emp.id} className="company-block-three">
+                        <div className="inner-box">
+                          <div className="content">
+                            <div className="content-inner">
+                              <span className="company-logo">
+                                <img
+                                  src={logoSrc}
+                                  alt={companyName}
+                                  onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = '/images/resource/company-logo/1-1.png';
+                                  }}
+                                />
+                              </span>
+                              <h4>
+                                <Link to={`/employers/${emp.id}`}>{companyName}</Link>
+                              </h4>
+                              <ul className="job-info">
+                                <li>
+                                  <span className="icon flaticon-map-locator"></span> {locationStr}
+                                </li>
+                                {categoriesList && (
+                                  <li>
+                                    <span className="icon flaticon-briefcase"></span> {categoriesList}
+                                  </li>
+                                )}
+                              </ul>
+                            </div>
+
+                            <ul className="job-other-info">
+                              {emp.approval_status === 'approved' && <li className="privacy">Verified</li>}
+                              {openJobsText && <li className="time">{openJobsText}</li>}
+                            </ul>
+                          </div>
+
+                          {emp.about_company && (
+                            <div className="text" style={{ whiteSpace: 'pre-line' }}>
+                              {emp.about_company.length > 250
+                                ? `${emp.about_company.substring(0, 250)}...`
+                                : emp.about_company}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
 
                 {/* Listing Show More Pagination */}
-                <div className="ls-show-more">
-                  <p>Showing 36 of 497 Jobs</p>
-                  <div className="bar">
-                    <span className="bar-inner" style={{ width: '40%' }}></span>
+                {totalEmployers > employers.length && (
+                  <div className="ls-show-more">
+                    <p>Showing {employers.length} of {totalEmployers} Employers</p>
+                    <div className="bar">
+                      <span
+                        className="bar-inner"
+                        style={{ width: `${Math.min(100, Math.round((employers.length / totalEmployers) * 100))}%` }}
+                      ></span>
+                    </div>
+                    <button
+                      className="show-more"
+                      onClick={() => setPage((prev) => prev + 1)}
+                      disabled={loading}
+                    >
+                      {loading ? 'Loading...' : 'Show More'}
+                    </button>
                   </div>
-                  <button className="show-more">Show More</button>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Footer alternate5 */}
-      <footer className="main-footer alternate5">
-        <div className="auto-container">
-          <div className="widgets-section">
-            <div className="row">
-              <div className="big-column col-xl-4 col-lg-3 col-md-12">
-                <div className="footer-column about-widget">
-                  <div className="logo">
-                    <Link to="/">
-                      <img src="/images/logo.svg" alt="" />
-                    </Link>
-                  </div>
-                  <p className="phone-num">
-                    <span>Call us </span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </p>
-                  <p className="address">
-                    329 Queensberry Street, North Melbourne VIC
-                    <br /> 3051, Australia. <br />
-                    <a href="mailto:support@superio.com" className="email">
-                      support@superio.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="big-column col-xl-8 col-lg-9 col-md-12">
-                <div className="row">
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Candidates</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/jobs">Browse Jobs</Link>
-                          </li>
-                          <li>
-                            <Link to="/jobs">Browse Categories</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard">Candidate Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/job-alerts">Job Alerts</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/shortlisted-jobs">My Bookmarks</Link>
-                          </li>
-                          <li>
-                            <Link to="/pricing">Job Packages</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Employers</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Browse Candidates</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard">Employer Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard/post-job">Add Job</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">About Us</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/about">About Us</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/blogs">Blog</Link>
-                          </li>
-                          <li>
-                            <Link to="/contact">Contact</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">Helpful Resources</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Site Map</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms of Use</Link>
-                          </li>
-                          <li>
-                            <Link to={location.pathname} onClick={(e) => e.preventDefault()}>Privacy Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Security Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Accessibility Center</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <div className="auto-container">
-            <div className="outer-box">
-              <div className="copyright-text">
-                © 2021 <Link to="/">Superio</Link>. All Right Reserved.
-              </div>
-              <div className="social-links">
-                <a href="#">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Main Footer */}
+      <Footer />
     </div>
   );
 };

@@ -13,18 +13,21 @@ const Footer = () => {
               <div className="footer-column about-widget">
                 <div className="logo">
                   <Link to="/">
-                    <img src="/images/logo-2.svg" alt="Superio Logo" />
+                    <img src="/images/logo-2.svg" alt="instajobs logo" />
                   </Link>
                 </div>
-                <p className="phone-num">
-                  <span>Call us </span>
-                  <a href="tel:1234567890">123 456 7890</a>
-                </p>
                 <p className="address">
-                  329 Queensberry Street, North Melbourne VIC
-                  <br /> 3051, Australia. <br />
-                  <a href="mailto:support@superio.com" className="email">
-                    support@superio.com
+                  Pan-India Gig Platform
+                </p>
+                <p className="phone-num">
+                  <span>Support </span>
+                  {/* <Link to="/contact">Contact Us</Link> */}
+                  <a
+                    href="https://mail.google.com/mail/?view=cm&to=support%40instajobs.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    support@instajobs.in
                   </a>
                 </p>
               </div>
@@ -47,12 +50,12 @@ const Footer = () => {
                         <li>
                           <RoleAwareLink to="/candidate-dashboard" targetRole="candidate">Candidate Dashboard</RoleAwareLink>
                         </li>
-                        <li>
+                        {/* <li>
                           <RoleAwareLink to="/candidate-dashboard/job-alerts" targetRole="candidate">Job Alerts</RoleAwareLink>
-                        </li>
-                        <li>
+                        </li> */}
+                        {/* <li>
                           <RoleAwareLink to="/candidate-dashboard/shortlisted-jobs" targetRole="candidate">My Bookmarks</RoleAwareLink>
-                        </li>
+                        </li> */}
                         <li>
                           <Link to="/pricing">Job Packages</Link>
                         </li>
@@ -67,9 +70,9 @@ const Footer = () => {
                     <h4 className="widget-title">For Employers</h4>
                     <div className="widget-content">
                       <ul className="list">
-                        <li>
+                        {/* <li>
                           <Link to="#">Browse Candidates</Link>
-                        </li>
+                        </li> */}
                         <li>
                           <RoleAwareLink to="/employer-dashboard" targetRole="employer">Employer Dashboard</RoleAwareLink>
                         </li>
@@ -93,21 +96,22 @@ const Footer = () => {
                         <li>
                           <Link to="/terms">Terms Page</Link>
                         </li>
-                        <li>
+                        {/* <li>
                           <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                        </li>
+                        </li> */}
                         <li>
                           <Link to="/blogs">Blog</Link>
                         </li>
-                        <li>
+                        {/* <li>
                           <Link to="/contact">Contact</Link>
-                        </li>
+                        </li> */}
                       </ul>
                     </div>
                   </div>
                 </div>
 
-                {/* Newsletter Form */}
+                {/* Newsletter Form - Commented out: purely decorative placeholder with no functional integration or subscription API */}
+                {/*
                 <div className="footer-column col-lg-4 col-md-12 col-sm-12">
                   <div className="footer-widget">
                     <h4 className="widget-title">Join Us On</h4>
@@ -140,6 +144,7 @@ const Footer = () => {
                     </div>
                   </div>
                 </div>
+                */}
               </div>
             </div>
           </div>
@@ -151,7 +156,7 @@ const Footer = () => {
         <div className="auto-container">
           <div className="outer-box">
             <div className="copyright-text">
-              © 2021 <Link to="/">Superio</Link>. All Right Reserved.
+              © 2026 <Link to="/">instajobs</Link>. All rights reserved.
             </div>
             <div className="social-links">
               <a href="#">

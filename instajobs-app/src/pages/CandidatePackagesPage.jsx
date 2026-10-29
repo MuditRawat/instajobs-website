@@ -1,21 +1,35 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
-
-const packagesData = [
-  { id: 1, transId: '#593677663', name: 'Super CV Pack', expiry: 'Jan 11, 2021', total: 50, used: 8, remaining: 42, status: 'Active' },
-  { id: 2, transId: '#593677663', name: 'Gold Jobs package', expiry: 'Jan 11, 2021', total: 50, used: 8, remaining: 42, status: 'Active' },
-  { id: 3, transId: '#593677663', name: 'Silver Jobs package', expiry: 'Jan 11, 2021', total: 50, used: 8, remaining: 42, status: 'Active' },
-  { id: 4, transId: '#593677663', name: 'Super CV Pack', expiry: 'Jan 11, 2021', total: 50, used: 8, remaining: 42, status: 'Active' },
-  { id: 5, transId: '#593677663', name: 'Gold Jobs package', expiry: 'Jan 11, 2021', total: 50, used: 8, remaining: 42, status: 'Active' },
-  { id: 6, transId: '#593677663', name: 'Silver Jobs package', expiry: 'Jan 11, 2021', total: 50, used: 8, remaining: 42, status: 'Active' },
-];
+import { candidateService } from '../services/candidateService';
+import { formatIndianDate } from '../utils/jobFormatters';
 
 const CandidatePackagesPage = () => {
+  const [packages, setPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const loadPackages = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await candidateService.getCandidatePackages();
+        setPackages(res?.packages || []);
+      } catch (err) {
+        console.error('Error fetching candidate packages:', err);
+        setError(err.message || 'Unable to load candidate packages.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPackages();
 
     if (window.$) {
       // Sidebar toggle handlers
@@ -56,16 +70,19 @@ const CandidatePackagesPage = () => {
                 <i className="la la-user-tie"></i> My Profile
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tab
             <li>
               <Link to="/candidate-dashboard/my-resume">
                 <i className="la la-file-invoice"></i> My Resume
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/applied-jobs">
                 <i className="la la-briefcase"></i> Applied Jobs
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/job-alerts">
                 <i className="la la-bell"></i> Job Alerts
@@ -76,6 +93,7 @@ const CandidatePackagesPage = () => {
                 <i className="la la-bookmark-o"></i> Shortlisted Jobs
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/cv-manager">
                 <i className="la la-file-invoice"></i> CV manager
@@ -86,6 +104,7 @@ const CandidatePackagesPage = () => {
                 <i className="la la-box"></i> Packages
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -96,6 +115,7 @@ const CandidatePackagesPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/my-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -105,9 +125,7 @@ const CandidatePackagesPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
 
@@ -134,39 +152,100 @@ const CandidatePackagesPage = () => {
                   </div>
 
                   <div className="widget-content">
-                    <div className="table-outer">
-                      <table className="default-table manage-job-table">
-                        <thead>
-                          <tr>
-                            <th>#</th>
-                            <th>Transaction id</th>
-                            <th>Package</th>
-                            <th>Expiry</th>
-                            <th>Total Jobs/CVs</th>
-                            <th>Used</th>
-                            <th>Remaining</th>
-                            <th>Status</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {packagesData.map((item) => (
-                            <tr key={item.id}>
-                              <td>{item.id}</td>
-                              <td className="trans-id">{item.transId}</td>
-                              <td className="package">
-                                <Link to="#">{item.name}</Link>
-                              </td>
-                              <td className="expiry">{item.expiry}</td>
-                              <td className="total-jobs">{item.total}</td>
-                              <td className="used">{item.used}</td>
-                              <td className="remaining">{item.remaining}</td>
-                              <td className="status">{item.status}</td>
+                    {loading ? (
+                      <div className="text-center py-5">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="sr-only">Loading candidate packages...</span>
+                        </div>
+                        <p className="text-muted mt-2 small">Loading your active packages and career plans...</p>
+                      </div>
+                    ) : error ? (
+                      <div className="alert alert-danger m-4 text-center" role="alert">
+                        <i className="la la-exclamation-circle mr-2"></i>
+                        {error}
+                      </div>
+                    ) : packages.length === 0 ? (
+                      <div className="text-center py-5 px-3">
+                        <div
+                          style={{
+                            width: '70px',
+                            height: '70px',
+                            borderRadius: '50%',
+                            backgroundColor: '#e8f0fe',
+                            color: '#1967d2',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '32px',
+                            marginBottom: '16px'
+                          }}
+                        >
+                          <i className="la la-box"></i>
+                        </div>
+                        <h5 className="font-weight-bold mb-2">No Active Packages</h5>
+                        <p className="text-muted small mb-4" style={{ maxWidth: '460px', margin: '0 auto' }}>
+                          Candidate registration, profile creation, and job applications on InstaJobs are currently <strong>100% Free</strong>. You have full access to search and apply to gig jobs without requiring a paid subscription package.
+                        </p>
+                        <div className="d-flex justify-content-center gap-3">
+                          <Link to="/jobs" className="theme-btn btn-style-one mr-2">
+                            Explore Active Gigs
+                          </Link>
+                          <Link to="/pricing" className="theme-btn btn-style-three">
+                            View Career Plans
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="table-outer">
+                        <table className="default-table manage-job-table">
+                          <thead>
+                            <tr>
+                              <th>#</th>
+                              <th>Transaction ID</th>
+                              <th>Package Name</th>
+                              <th>Price (₹)</th>
+                              <th>Expiry Date</th>
+                              <th>Status</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+
+                          <tbody>
+                            {packages.map((item, index) => {
+                              const transId = item.transaction_id || item.trans_id || `#${String(item.id).padStart(8, '0')}`;
+                              const packageName = item.package_name || item.name || 'Candidate Career Plan';
+                              const priceFormatted = item.price_inr != null ? `₹${Number(item.price_inr).toLocaleString('en-IN')}` : 'Free';
+                              const expiryFormatted = item.expiry_date ? formatIndianDate(item.expiry_date) : 'Ongoing';
+                              const status = item.status || 'Active';
+
+                              return (
+                                <tr key={item.id || index}>
+                                  <td>{index + 1}</td>
+                                  <td className="trans-id font-weight-bold">{transId}</td>
+                                  <td className="package">
+                                    <span className="font-weight-bold text-dark">{packageName}</span>
+                                  </td>
+                                  <td>
+                                    <span className="text-dark font-weight-bold">{priceFormatted}</span>
+                                  </td>
+                                  <td className="expiry">{expiryFormatted}</td>
+                                  <td className="status">
+                                    <span
+                                      className={`badge px-2 py-1 ${
+                                        status.toLowerCase() === 'active'
+                                          ? 'bg-success text-white'
+                                          : 'bg-secondary text-white'
+                                      }`}
+                                    >
+                                      {status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -177,7 +256,7 @@ const CandidatePackagesPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { validateAndNormalizeIdentifier } from '../../utils/identifierValidator';
@@ -266,7 +267,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
 
   if (!isOpen && !isClosing) return null;
 
-  return (
+  return createPortal(
     <div
       className="blocker current"
       style={{
@@ -277,11 +278,11 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
         left: 0,
         width: '100%',
         height: '100%',
-        overflow: 'auto',
-        zIndex: 99999,
+        overflowY: 'auto',
+        zIndex: 999999,
         padding: '20px',
         boxSizing: 'border-box',
-        backgroundColor: 'rgba(32, 33, 36, 0.5)',
+        backgroundColor: 'rgba(32, 33, 36, 0.65)',
         textAlign: 'center',
         opacity: activeOpacity,
         transition: 'opacity 300ms linear'
@@ -323,7 +324,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             style={{ animationDuration: '150ms' }}
           >
             <div className="form-inner">
-              <h3>Login to Superio</h3>
+              <h3>Login to instajobs</h3>
 
               {message && (
                 <div className="alert alert-success" style={{ marginBottom: '15px', borderRadius: '8px' }}>
@@ -452,7 +453,7 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
             style={{ animationDuration: '150ms' }}
           >
             <div className="form-inner">
-              <h3>Create a Free Superio Account</h3>
+              <h3>Create a Free instajobs Account</h3>
 
               {message && (
                 <div className="alert alert-success" style={{ marginBottom: '15px', borderRadius: '8px' }}>
@@ -624,7 +625,8 @@ const AuthModal = ({ isOpen, onClose, initialMode = 'login' }) => {
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

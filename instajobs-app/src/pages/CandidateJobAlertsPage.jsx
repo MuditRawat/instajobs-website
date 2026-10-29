@@ -2,41 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
 
-const initialJobAlerts = [
-  {
-    id: 1,
-    title: 'Senior Full Stack Engineer, Creator Success',
-    location: 'London, UK',
-    criteria: 'Human Resources, Junior',
-    created: 'Nov 12, 2021',
-  },
-  {
-    id: 2,
-    title: 'Senior Product Designer',
-    location: 'London, UK',
-    criteria: 'Human Resources, Junior',
-    created: 'Nov 12, 2021',
-  },
-  {
-    id: 3,
-    title: 'Sr. Full Stack Engineer',
-    location: 'London, UK',
-    criteria: 'Human Resources, Junior',
-    created: 'Nov 12, 2021',
-  },
-  {
-    id: 4,
-    title: 'Product Manager, Studio',
-    location: 'London, UK',
-    criteria: 'Human Resources, Junior',
-    created: 'Nov 12, 2021',
-  },
-];
-
 const CandidateJobAlertsPage = () => {
-  const [alerts, setAlerts] = useState(initialJobAlerts);
+  const [alerts, setAlerts] = useState([]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -102,16 +72,19 @@ const CandidateJobAlertsPage = () => {
                 <i className="la la-user-tie"></i> My Profile
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tab
             <li>
               <Link to="/candidate-dashboard/my-resume">
                 <i className="la la-file-invoice"></i> My Resume
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/applied-jobs">
                 <i className="la la-briefcase"></i> Applied Jobs
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li className="active">
               <Link to="/candidate-dashboard/job-alerts">
                 <i className="la la-bell"></i> Job Alerts
@@ -122,6 +95,7 @@ const CandidateJobAlertsPage = () => {
                 <i className="la la-bookmark-o"></i> Shortlisted Jobs
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/cv-manager">
                 <i className="la la-file-invoice"></i> CV manager
@@ -132,6 +106,7 @@ const CandidateJobAlertsPage = () => {
                 <i className="la la-box"></i> Packages
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -142,6 +117,7 @@ const CandidateJobAlertsPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/my-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -151,9 +127,7 @@ const CandidateJobAlertsPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
 
@@ -191,52 +165,65 @@ const CandidateJobAlertsPage = () => {
                   </div>
 
                   <div className="widget-content">
-                    <div className="table-outer">
-                      <table className="default-table manage-job-table">
-                        <thead>
-                          <tr>
-                            <th>Title</th>
-                            <th>Criteria</th>
-                            <th>Created</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {alerts.map((alert) => (
-                            <tr key={alert.id}>
-                              <td>
-                                <h6>{alert.title}</h6>
-                                <span className="info">
-                                  <i className="icon flaticon-map-locator"></i> {alert.location}
-                                </span>
-                              </td>
-                              <td>{alert.criteria}</td>
-                              <td>{alert.created}</td>
-                              <td>
-                                <div className="option-box">
-                                  <ul className="option-list">
-                                    <li>
-                                      <button data-text="View Aplication">
-                                        <span className="la la-eye"></span>
-                                      </button>
-                                    </li>
-                                    <li>
-                                      <button
-                                        data-text="Delete Aplication"
-                                        onClick={() => handleDeleteAlert(alert.id)}
-                                      >
-                                        <span className="la la-trash"></span>
-                                      </button>
-                                    </li>
-                                  </ul>
-                                </div>
-                              </td>
+                    {alerts.length === 0 ? (
+                      <div className="text-center py-5">
+                        <i className="la la-bell text-muted" style={{ fontSize: '48px', opacity: 0.5 }}></i>
+                        <h5 className="mt-3 mb-1 font-weight-bold text-dark">No Active Job Alerts</h5>
+                        <p className="text-muted small mb-3">
+                          You do not have any active job alerts configured. Set your preferences in your candidate profile to get notified when new gig opportunities match your skills.
+                        </p>
+                        <Link to="/candidate-dashboard/my-profile" className="theme-btn btn-style-one">
+                          Update Gig Preferences
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="table-outer">
+                        <table className="default-table manage-job-table">
+                          <thead>
+                            <tr>
+                              <th>Title</th>
+                              <th>Criteria</th>
+                              <th>Created</th>
+                              <th>Action</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+
+                          <tbody>
+                            {alerts.map((alert) => (
+                              <tr key={alert.id}>
+                                <td>
+                                  <h6>{alert.title}</h6>
+                                  <span className="info">
+                                    <i className="icon flaticon-map-locator"></i> {alert.location}
+                                  </span>
+                                </td>
+                                <td>{alert.criteria}</td>
+                                <td>{alert.created}</td>
+                                <td>
+                                  <div className="option-box">
+                                    <ul className="option-list">
+                                      <li>
+                                        <button data-text="View Application">
+                                          <span className="la la-eye"></span>
+                                        </button>
+                                      </li>
+                                      <li>
+                                        <button
+                                          data-text="Delete Alert"
+                                          onClick={() => handleDeleteAlert(alert.id)}
+                                        >
+                                          <span className="la la-trash"></span>
+                                        </button>
+                                      </li>
+                                    </ul>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -247,7 +234,7 @@ const CandidateJobAlertsPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

@@ -92,6 +92,33 @@ const updateEmployerApprovalStatus = async (req, res) => {
 };
 
 /**
+ * Controller: Update employer AI Interview access permission
+ * PATCH /api/admin/employers/:id/ai-interview-access
+ */
+const updateEmployerAiInterviewAccess = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { ai_interview_enabled } = req.body || {};
+
+    const updatedEmployer = await AdminService.updateEmployerAiInterviewAccess(id, ai_interview_enabled);
+
+    return res.status(200).json({
+      success: true,
+      message: `Employer AI Interview access ${updatedEmployer.ai_interview_enabled ? 'enabled' : 'disabled'} successfully.`,
+      employer: updatedEmployer
+    });
+  } catch (error) {
+    console.error('[Admin updateEmployerAiInterviewAccess Error]', error);
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: error.code || (statusCode === 400 ? 'Bad Request' : statusCode === 404 ? 'Not Found' : 'Internal Server Error'),
+      message: error.message || 'Failed to update employer AI interview access.'
+    });
+  }
+};
+
+/**
  * Controller: Get single employer profile details by ID
  * GET /api/admin/employers/:id
  */
@@ -168,6 +195,7 @@ module.exports = {
   getEmployers,
   exportEmployers,
   updateEmployerApprovalStatus,
+  updateEmployerAiInterviewAccess,
   getEmployerById,
   getEmployerJobs,
   getDashboardStats

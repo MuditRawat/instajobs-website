@@ -296,6 +296,102 @@ export const adminService = {
     }
 
     return data;
+  },
+
+  /**
+   * Update employer AI Interview access permission
+   * PATCH /api/admin/employers/:id/ai-interview-access
+   * @param {string} id - Employer profile UUID
+   * @param {boolean} ai_interview_enabled - true to enable, false to disable
+   * @returns {Promise<{ success: boolean, message: string, employer: object }>}
+   */
+  async updateEmployerAiInterviewAccess(id, ai_interview_enabled) {
+    const session = await authService.getSession();
+    if (!session?.access_token) {
+      const err = new Error('Authentication required. Please log in.');
+      err.statusCode = 401;
+      throw err;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/employers/${id}/ai-interview-access`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ ai_interview_enabled: Boolean(ai_interview_enabled) })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      const err = new Error(data.message || data.error || 'Failed to update AI Interview access.');
+      err.statusCode = response.status;
+      err.code = data.error;
+      throw err;
+    }
+
+    return data;
+  },
+
+  /**
+   * Update page content by key (Admin operation)
+   * PUT /api/admin/content/:key
+   */
+  async updatePageContent(key, title, content) {
+    const session = await authService.getSession();
+    if (!session?.access_token) {
+      const err = new Error('Authentication required. Please log in.');
+      err.statusCode = 401;
+      throw err;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/content/${key}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ title, content })
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      const err = new Error(data.message || data.error || 'Failed to update page content.');
+      err.statusCode = response.status;
+      throw err;
+    }
+    return data;
+  },
+
+  /**
+   * Save or create FAQ item (Admin operation)
+   * POST /api/admin/faqs
+   */
+  async saveFaq(faqData) {
+    const session = await authService.getSession();
+    if (!session?.access_token) {
+      const err = new Error('Authentication required. Please log in.');
+      err.statusCode = 401;
+      throw err;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/admin/faqs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify(faqData)
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      const err = new Error(data.message || data.error || 'Failed to save FAQ.');
+      err.statusCode = response.status;
+      throw err;
+    }
+    return data;
   }
 };
 

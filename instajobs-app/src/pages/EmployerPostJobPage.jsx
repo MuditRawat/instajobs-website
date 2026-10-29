@@ -5,32 +5,17 @@ import LogoutLink from '../components/common/LogoutLink';
 import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import { jobService } from '../services/jobService';
 import { employerService } from '../services/employerService';
-
-const DEFAULT_COUNTRIES = [
-  'Australia',
-  'Canada',
-  'China',
-  'France',
-  'Germany',
-  'India',
-  'Japan',
-  'Pakistan',
-  'United Kingdom',
-  'United States'
-];
-
-const COUNTRY_CITY_MAP = {
-  Australia: ['Melbourne', 'Sydney', 'Brisbane', 'Perth'],
-  Canada: ['Toronto', 'Vancouver', 'Montreal', 'Calgary'],
-  China: ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen'],
-  France: ['Paris', 'Lyon', 'Marseille', 'Toulouse'],
-  Germany: ['Berlin', 'Munich', 'Frankfurt', 'Hamburg'],
-  India: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad'],
-  Japan: ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama'],
-  Pakistan: ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi'],
-  'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Edinburgh'],
-  'United States': ['New York', 'San Francisco', 'Los Angeles', 'Chicago', 'Austin', 'Seattle']
-};
+import {
+  ALL_CATEGORY_VALUES,
+  GIG_JOB_TYPES,
+  COMPENSATION_RATE_TYPES
+} from '../constants/gigTaxonomy';
+import {
+  INDIA_STATES_AND_UTS,
+  STATE_CITY_MAP,
+  getCitiesForState,
+  isValidIndianPinCode
+} from '../constants/indiaLocations';
 
 const EmployerPostJobPage = () => {
   const { id } = useParams();
@@ -44,17 +29,24 @@ const EmployerPostJobPage = () => {
     job_type: '',
     salary_min: '',
     salary_max: '',
-    salary_rate: '',
+    salary_rate: 'Per Day',
     career_level: '',
     experience: '',
     gender: '',
     industry: '',
     education_level: '',
     deadline_date: '',
-    country: 'Australia',
-    city: 'Melbourne',
+    country: 'India',
+    state: 'Karnataka',
+    city: 'Bengaluru',
+    locality: '',
+    pin_code: '',
     address: '',
+    ai_interview_enabled: false,
   });
+
+  // Access granted by platform admin
+  const [hasAiInterviewAccess, setHasAiInterviewAccess] = useState(false);
 
   // Template-only Visual State (Not persisted/sent to DB)
   const [visualData, setVisualData] = useState({
@@ -70,14 +62,15 @@ const EmployerPostJobPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const availableCities = COUNTRY_CITY_MAP[formData.country] || [];
+  const availableCities = getCitiesForState(formData.state || 'Karnataka');
 
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // Prefill employer profile details (email, username) if logged in
+    // Prefill employer profile details (email, username) and check AI interview feature access
     employerService.getEmployerProfile().then(data => {
       if (data?.profile || data?.user) {
+        setHasAiInterviewAccess(Boolean(data.profile?.ai_interview_enabled));
         setVisualData(prev => ({
           ...prev,
           email: data.profile?.company_email || data.user?.email || prev.email,
@@ -93,9 +86,17 @@ const EmployerPostJobPage = () => {
         .then(res => {
           if (res?.job) {
             const j = res.job;
-            const country = j.country || 'Australia';
-            const citiesForCountry = COUNTRY_CITY_MAP[country] || [];
-            const city = j.city || citiesForCountry[0] || 'Melbourne';
+            const country = j.country || 'India';
+            const city = j.city || 'Bengaluru';
+
+            // Find matching state if known
+            let matchedState = 'Karnataka';
+            for (const [sName, cList] of Object.entries(STATE_CITY_MAP)) {
+              if (cList.some(c => c.toLowerCase() === city.toLowerCase())) {
+                matchedState = sName;
+                break;
+              }
+            }
 
             setFormData({
               title: j.title || '',
@@ -104,7 +105,7 @@ const EmployerPostJobPage = () => {
               job_type: j.job_type || '',
               salary_min: j.salary_min !== null && j.salary_min !== undefined ? String(j.salary_min) : '',
               salary_max: j.salary_max !== null && j.salary_max !== undefined ? String(j.salary_max) : '',
-              salary_rate: j.salary_rate || '',
+              salary_rate: j.salary_rate || 'Per Day',
               career_level: j.career_level || '',
               experience: j.experience || '',
               gender: j.gender || '',
@@ -112,8 +113,12 @@ const EmployerPostJobPage = () => {
               education_level: j.education_level || '',
               deadline_date: j.deadline_date || '',
               country,
+              state: matchedState,
               city,
+              locality: '',
+              pin_code: '',
               address: j.address || '',
+              ai_interview_enabled: Boolean(j.ai_interview_enabled),
             });
 
             setVisualData(prev => ({
@@ -150,13 +155,13 @@ const EmployerPostJobPage = () => {
         const name = e.target.name;
         const value = window.$(e.target).val();
 
-        if (name === 'country') {
-          const newCountry = value || '';
-          const validCities = COUNTRY_CITY_MAP[newCountry] || [];
+        if (name === 'state') {
+          const newState = value || 'Karnataka';
+          const validCities = getCitiesForState(newState);
           const newCity = validCities[0] || '';
           setFormData((prev) => ({
             ...prev,
-            country: newCountry,
+            state: newState,
             city: newCity
           }));
         } else if (name === 'city') {
@@ -210,13 +215,13 @@ const EmployerPostJobPage = () => {
     };
   }, [id, isEdit]);
 
-  // Update Chosen whenever form state (country, city, category, etc.) changes or loads
+  // Update Chosen whenever form state (state, city, category, etc.) changes or loads
   useEffect(() => {
     if (window.$ && window.$.fn && window.$.fn.chosen) {
       window.$('.chosen-select').trigger('chosen:updated');
     }
   }, [
-    formData.country,
+    formData.state,
     formData.city,
     formData.category,
     formData.job_type,
@@ -231,18 +236,18 @@ const EmployerPostJobPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'country') {
-      const validCities = COUNTRY_CITY_MAP[value] || [];
+    if (name === 'state') {
+      const validCities = getCitiesForState(value);
       const newCity = validCities[0] || '';
       setFormData((prev) => ({
         ...prev,
-        country: value,
+        state: value,
         city: newCity
       }));
     } else {
       setFormData((prev) => ({
         ...prev,
-        [name]: value,
+        [name]: value
       }));
     }
   };
@@ -313,6 +318,9 @@ const EmployerPostJobPage = () => {
     if (formData.city) payload.city = formData.city.trim();
     if (formData.address) payload.address = formData.address.trim();
 
+    // Persist AI Interview setting if enabled and employer has permission
+    payload.ai_interview_enabled = Boolean(formData.ai_interview_enabled);
+
     try {
       setIsSubmitting(true);
 
@@ -333,16 +341,20 @@ const EmployerPostJobPage = () => {
             job_type: '',
             salary_min: '',
             salary_max: '',
-            salary_rate: '',
+            salary_rate: 'Per Day',
             career_level: '',
             experience: '',
             gender: '',
             industry: '',
             education_level: '',
             deadline_date: '',
-            country: 'Australia',
-            city: 'Melbourne',
+            country: 'India',
+            state: 'Karnataka',
+            city: 'Bengaluru',
+            locality: '',
+            pin_code: '',
             address: '',
+            ai_interview_enabled: false,
           });
           window.scrollTo(0, 0);
         }
@@ -400,9 +412,10 @@ const EmployerPostJobPage = () => {
             </li>
             <li>
               <Link to="/employer-dashboard/shortlisted-resumes">
-                <i className="la la-bookmark-o"></i> Shortlisted Resumes
+                <i className="la la-bookmark-o"></i> Shortlisted Applicants
               </Link>
             </li>
+            {/* Temporarily hidden employer dashboard tabs
             <li>
               <Link to="/employer-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -418,6 +431,7 @@ const EmployerPostJobPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/employer-dashboard/company-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -540,70 +554,69 @@ const EmployerPostJobPage = () => {
                               />
                             </div>
 
-                            {/* Job Category (Phase 1 Single-Select Category) */}
+                            {/* Job Category */}
                             <div className="form-group col-lg-6 col-md-12">
-                              <label>Category</label>
+                              <label>Gig Category *</label>
                               <select
                                 name="category"
                                 className="chosen-select"
                                 value={formData.category}
                                 onChange={handleChange}
+                                required
                               >
                                 <option value="">Select Category</option>
-                                <option value="Accounting / Finance">Accounting / Finance</option>
-                                <option value="Automotive Jobs">Automotive Jobs</option>
-                                <option value="Customer">Customer</option>
-                                <option value="Design">Design</option>
-                                <option value="Development">Development</option>
-                                <option value="Health and Care">Health and Care</option>
-                                <option value="Marketing">Marketing</option>
-                                <option value="Project Management">Project Management</option>
+                                {ALL_CATEGORY_VALUES.map((cat) => (
+                                  <option key={cat} value={cat}>
+                                    {cat}
+                                  </option>
+                                ))}
                               </select>
                             </div>
 
-                            {/* Job Type */}
+                            {/* Job / Work Type */}
                             <div className="form-group col-lg-6 col-md-12">
-                              <label>Job Type</label>
+                              <label>Work Arrangement / Job Type *</label>
                               <select
                                 name="job_type"
                                 className="chosen-select"
                                 value={formData.job_type}
                                 onChange={handleChange}
+                                required
                               >
-                                <option value="">Select Job Type</option>
-                                <option value="Full Time">Full Time</option>
-                                <option value="Part Time">Part Time</option>
-                                <option value="Freelance">Freelance</option>
-                                <option value="Internship">Internship</option>
-                                <option value="Temporary">Temporary</option>
+                                <option value="">Select Work Type</option>
+                                {GIG_JOB_TYPES.map((typeObj) => (
+                                  <option key={typeObj.value} value={typeObj.value}>
+                                    {typeObj.label}
+                                  </option>
+                                ))}
                               </select>
                             </div>
 
                             {/* Salary Rate */}
                             <div className="form-group col-lg-4 col-md-12">
-                              <label>Salary Rate</label>
+                              <label>Payment Basis *</label>
                               <select
                                 name="salary_rate"
                                 className="chosen-select"
                                 value={formData.salary_rate}
                                 onChange={handleChange}
+                                required
                               >
-                                <option value="">Select Rate</option>
-                                <option value="Per Hour">Per Hour</option>
-                                <option value="Per Day">Per Day</option>
-                                <option value="Per Week">Per Week</option>
-                                <option value="Per Month">Per Month</option>
-                                <option value="Per Year">Per Year</option>
+                                {COMPENSATION_RATE_TYPES.map((rateObj) => (
+                                  <option key={rateObj.value} value={rateObj.value}>
+                                    {rateObj.label}
+                                  </option>
+                                ))}
                               </select>
                             </div>
 
                             {/* Minimum Salary */}
                             <div className="form-group col-lg-4 col-md-12">
-                              <label>Min Salary ($)</label>
+                              <label>Min Rate (₹)</label>
                               <input
                                 type="number"
                                 name="salary_min"
-                                placeholder="e.g. 50000"
+                                placeholder="e.g. 800"
                                 value={formData.salary_min}
                                 onChange={handleChange}
                                 min="0"
@@ -612,11 +625,11 @@ const EmployerPostJobPage = () => {
 
                             {/* Maximum Salary */}
                             <div className="form-group col-lg-4 col-md-12">
-                              <label>Max Salary ($)</label>
+                              <label>Max Rate (₹)</label>
                               <input
                                 type="number"
                                 name="salary_max"
-                                placeholder="e.g. 80000"
+                                placeholder="e.g. 1200"
                                 value={formData.salary_max}
                                 onChange={handleChange}
                                 min="0"
@@ -722,8 +735,8 @@ const EmployerPostJobPage = () => {
                               />
                             </div>
 
-                            {/* Country */}
-                            <div className="form-group col-lg-6 col-md-12">
+                            {/* Country (India default) */}
+                            <div className="form-group col-lg-4 col-md-12">
                               <label>Country</label>
                               <select
                                 name="country"
@@ -731,22 +744,37 @@ const EmployerPostJobPage = () => {
                                 value={formData.country}
                                 onChange={handleChange}
                               >
-                                {DEFAULT_COUNTRIES.map((countryName) => (
-                                  <option key={countryName} value={countryName}>
-                                    {countryName}
+                                <option value="India">India</option>
+                              </select>
+                            </div>
+
+                            {/* State / UT */}
+                            <div className="form-group col-lg-4 col-md-12">
+                              <label>State / Union Territory *</label>
+                              <select
+                                name="state"
+                                className="chosen-select"
+                                value={formData.state}
+                                onChange={handleChange}
+                                required
+                              >
+                                {INDIA_STATES_AND_UTS.map((st) => (
+                                  <option key={st.code} value={st.name}>
+                                    {st.name} ({st.type})
                                   </option>
                                 ))}
                               </select>
                             </div>
 
-                            {/* City */}
-                            <div className="form-group col-lg-6 col-md-12">
-                              <label>City</label>
+                            {/* City / District */}
+                            <div className="form-group col-lg-4 col-md-12">
+                              <label>City / Hub *</label>
                               <select
                                 name="city"
                                 className="chosen-select"
                                 value={formData.city}
                                 onChange={handleChange}
+                                required
                               >
                                 {availableCities.map((cityName) => (
                                   <option key={cityName} value={cityName}>
@@ -756,62 +784,58 @@ const EmployerPostJobPage = () => {
                               </select>
                             </div>
 
-                            {/* Complete Address */}
+                            {/* Complete Address & Locality */}
                             <div className="form-group col-lg-12 col-md-12">
-                              <label>Complete Address</label>
+                              <label>Locality, Street, or Landmark Address</label>
                               <input
                                 type="text"
                                 name="address"
-                                placeholder="329 Queensberry Street, North Melbourne VIC 3051, Australia."
+                                placeholder="e.g. 100 Feet Road, Indiranagar, Near Metro Station, Bengaluru - 560038"
                                 value={formData.address}
                                 onChange={handleChange}
                               />
                             </div>
 
-                            {/* Find On Map (Visual Only) */}
+                            {/* Temporarily commented out legacy location controls and static foreign map preview
                             <div className="form-group col-lg-6 col-md-12">
                               <label>Find On Map</label>
                               <input
                                 type="text"
                                 name="findOnMap"
-                                placeholder="329 Queensberry Street, North Melbourne VIC 3051, Australia."
+                                placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru, Karnataka - 560038"
                                 value={visualData.findOnMap}
                                 onChange={handleVisualChange}
                               />
                             </div>
 
-                            {/* Latitude (Visual Only) */}
                             <div className="form-group col-lg-3 col-md-12">
                               <label>Latitude</label>
                               <input
                                 type="text"
                                 name="latitude"
-                                placeholder="Melbourne"
+                                placeholder="12.9716"
                                 value={visualData.latitude}
                                 onChange={handleVisualChange}
                               />
                             </div>
 
-                            {/* Longitude (Visual Only) */}
                             <div className="form-group col-lg-3 col-md-12">
                               <label>Longitude</label>
                               <input
                                 type="text"
                                 name="longitude"
-                                placeholder="Melbourne"
+                                placeholder="77.5946"
                                 value={visualData.longitude}
                                 onChange={handleVisualChange}
                               />
                             </div>
 
-                            {/* Search Location Button (Visual Only) */}
                             <div className="form-group col-lg-12 col-md-12">
                               <button className="theme-btn btn-style-three" type="button">
                                 Search Location
                               </button>
                             </div>
 
-                            {/* Map Canvas (Visual Only) */}
                             <div className="form-group col-lg-12 col-md-12">
                               <div className="map-outer">
                                 <div
@@ -836,6 +860,108 @@ const EmployerPostJobPage = () => {
                                     src="https://maps.google.com/maps?q=-37.817085,144.955631&z=12&output=embed"
                                     style={{ border: 0, width: '100%', height: '100%', borderRadius: '10px' }}
                                   ></iframe>
+                                </div>
+                              </div>
+                            </div>
+                            */}
+
+                            {/* AI Interview Setting */}
+                            <div className="form-group col-lg-12 col-md-12">
+                              <div
+                                className="p-4 rounded border"
+                                style={{
+                                  backgroundColor: hasAiInterviewAccess ? '#f8fafc' : '#fef2f2',
+                                  borderColor: hasAiInterviewAccess ? '#cbd5e1' : '#fecaca',
+                                }}
+                              >
+                                <div className="d-flex align-items-center justify-content-between flex-wrap" style={{ gap: '15px' }}>
+                                  <div style={{ maxWidth: '650px' }}>
+                                    <div className="d-flex align-items-center mb-1">
+                                      <i
+                                        className="la la-robot mr-2"
+                                        style={{
+                                          fontSize: '22px',
+                                          color: hasAiInterviewAccess ? '#2563eb' : '#9ca3af',
+                                        }}
+                                      ></i>
+                                      <h6 className="font-weight-bold mb-0" style={{ fontSize: '15px' }}>
+                                        AI Interview Screening Round
+                                      </h6>
+                                    </div>
+                                    <p className="text-muted small mb-0">
+                                      {hasAiInterviewAccess
+                                        ? 'Enable automated AI interview screening for applicants who apply to this job opening.'
+                                        : 'AI Interview screening is currently disabled for your employer account. Please contact an administrator to request access.'}
+                                    </p>
+                                  </div>
+
+                                  <div className="d-flex align-items-center">
+                                    <label
+                                      className="switch mb-0"
+                                      style={{
+                                        position: 'relative',
+                                        display: 'inline-block',
+                                        width: '50px',
+                                        height: '26px',
+                                        cursor: hasAiInterviewAccess ? 'pointer' : 'not-allowed',
+                                        opacity: hasAiInterviewAccess ? 1 : 0.6,
+                                      }}
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        name="ai_interview_enabled"
+                                        disabled={!hasAiInterviewAccess}
+                                        checked={Boolean(formData.ai_interview_enabled)}
+                                        onChange={(e) => {
+                                          if (!hasAiInterviewAccess) return;
+                                          setFormData((prev) => ({
+                                            ...prev,
+                                            ai_interview_enabled: e.target.checked,
+                                          }));
+                                        }}
+                                        style={{ opacity: 0, width: 0, height: 0 }}
+                                      />
+                                      <span
+                                        style={{
+                                          position: 'absolute',
+                                          cursor: hasAiInterviewAccess ? 'pointer' : 'not-allowed',
+                                          top: 0,
+                                          left: 0,
+                                          right: 0,
+                                          bottom: 0,
+                                          backgroundColor: formData.ai_interview_enabled && hasAiInterviewAccess ? '#16a34a' : '#cbd5e1',
+                                          transition: '0.3s',
+                                          borderRadius: '34px',
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            position: 'absolute',
+                                            content: '""',
+                                            height: '20px',
+                                            width: '20px',
+                                            left: formData.ai_interview_enabled && hasAiInterviewAccess ? '26px' : '3px',
+                                            bottom: '3px',
+                                            backgroundColor: 'white',
+                                            transition: '0.3s',
+                                            borderRadius: '50%',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                          }}
+                                        ></span>
+                                      </span>
+                                    </label>
+                                    <span
+                                      className="ml-2 font-weight-bold"
+                                      style={{
+                                        fontSize: '13px',
+                                        color: formData.ai_interview_enabled && hasAiInterviewAccess ? '#16a34a' : '#64748b',
+                                      }}
+                                    >
+                                      {hasAiInterviewAccess
+                                        ? (formData.ai_interview_enabled ? 'Enabled' : 'Disabled')
+                                        : 'Locked'}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -864,7 +990,7 @@ const EmployerPostJobPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

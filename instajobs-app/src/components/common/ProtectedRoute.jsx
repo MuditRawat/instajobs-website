@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ProtectedRoute = ({ children, allowedRole }) => {
   const { user, session, role, loading, isAuthenticated, isLoggingOut } = useAuth();
+  const location = useLocation();
 
   // Show loading spinner while AuthContext is restoring Supabase session or logging out
   if (loading || isLoggingOut) {
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ children, allowedRole }) => {
 
   // 1. Unauthenticated users -> Redirect to /login
   if (!isAuthenticated || !user || !session) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
   }
 
   // 2. Cross-role access protection

@@ -6,19 +6,11 @@ import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
 import { useAuth } from '../context/AuthContext';
 import { candidateService } from '../services/candidateService';
+import { INDIA_STATES_AND_UTS, STATE_CITY_MAP, getCitiesForState } from '../constants/indiaLocations';
+import { ALL_CATEGORY_VALUES } from '../constants/gigTaxonomy';
+import { normalizeIndianPhone, isIndianMobileNumber } from '../utils/indianPhoneHelper';
 
-const LOCATION_DATA = {
-  Australia: ['Melbourne', 'Sydney', 'Brisbane', 'Perth', 'Adelaide', 'Canberra', 'Gold Coast'],
-  Canada: ['Toronto', 'Vancouver', 'Montreal', 'Calgary', 'Ottawa', 'Edmonton', 'Quebec City'],
-  China: ['Beijing', 'Shanghai', 'Shenzhen', 'Guangzhou', 'Chengdu', 'Hangzhou', 'Wuhan'],
-  France: ['Paris', 'Marseille', 'Lyon', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg'],
-  Germany: ['Berlin', 'Munich', 'Frankfurt', 'Hamburg', 'Cologne', 'Stuttgart', 'Düsseldorf'],
-  India: ['Delhi', 'Mumbai', 'Bengaluru', 'Hyderabad', 'Chennai', 'Pune', 'Kolkata', 'Ahmedabad'],
-  Japan: ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama', 'Nagoya', 'Sapporo', 'Fukuoka'],
-  Pakistan: ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Peshawar', 'Multan'],
-  'United Kingdom': ['London', 'Manchester', 'Birmingham', 'Liverpool', 'Leeds', 'Edinburgh', 'Glasgow'],
-  'United States': ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Francisco', 'Seattle'],
-};
+const LOCATION_DATA = STATE_CITY_MAP;
 
 const getValidEmail = (val) => (val && typeof val === 'string' && val.includes('@')) ? val : '';
 
@@ -323,10 +315,20 @@ const CandidateMyProfilePage = () => {
         }
       }
 
+      let normalizedPhone = profileData.phone ? profileData.phone.trim() : '';
+      if (authMethod !== 'phone' && normalizedPhone) {
+        if (!isIndianMobileNumber(normalizedPhone)) {
+          setErrorMessage('Please enter a valid 10-digit Indian mobile number (starting with 6, 7, 8, or 9).');
+          setIsSaving(false);
+          return;
+        }
+        normalizedPhone = normalizeIndianPhone(normalizedPhone);
+      }
+
       const payload = {
         full_name: profileData.fullName,
         job_title: profileData.jobTitle,
-        phone: authMethod === 'phone' ? undefined : profileData.phone,
+        phone: authMethod === 'phone' ? undefined : normalizedPhone,
         email: authMethod === 'phone' ? profileData.email : undefined,
         website: profileData.website,
         current_salary: profileData.currentSalary,
@@ -425,16 +427,19 @@ const CandidateMyProfilePage = () => {
                 <i className="la la-user-tie"></i> My Profile
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tab
             <li>
               <Link to="/candidate-dashboard/my-resume">
                 <i className="la la-file-invoice"></i> My Resume
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/applied-jobs">
                 <i className="la la-briefcase"></i> Applied Jobs
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/job-alerts">
                 <i className="la la-bell"></i> Job Alerts
@@ -445,6 +450,7 @@ const CandidateMyProfilePage = () => {
                 <i className="la la-bookmark-o"></i> Shortlisted Jobs
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/cv-manager">
                 <i className="la la-file-invoice"></i> CV manager
@@ -455,6 +461,7 @@ const CandidateMyProfilePage = () => {
                 <i className="la la-box"></i> Packages
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -465,6 +472,7 @@ const CandidateMyProfilePage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/my-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -575,11 +583,11 @@ const CandidateMyProfilePage = () => {
 
                         {/* Input */}
                         <div className="form-group col-lg-6 col-md-12">
-                          <label>Phone</label>
+                          <label>Phone Number (Mobile)</label>
                           <input
                             type="text"
                             name="phone"
-                            placeholder="Phone number"
+                            placeholder="+91 98765 43210"
                             value={profileData.phone}
                             onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                             readOnly={authMethod === 'phone'}
@@ -617,38 +625,63 @@ const CandidateMyProfilePage = () => {
 
                         {/* Input */}
                         <div className="form-group col-lg-3 col-md-12">
-                          <label>Current Salary($)</label>
+                          <label>Current Pay / Compensation (₹)</label>
                           <select
                             className="chosen-select"
                             name="currentSalary"
                             value={profileData.currentSalary}
                             onChange={(e) => setProfileData({ ...profileData, currentSalary: e.target.value })}
                           >
-                            <option value="">Select Salary</option>
-                            <option>40-70 K</option>
-                            <option>50-80 K</option>
-                            <option>60-90 K</option>
-                            <option>70-100 K</option>
-                            <option>100-150 K</option>
+                            <option value="">Select Compensation</option>
+                            <option value="₹500 - ₹800 / day">₹500 - ₹800 / day</option>
+                            <option value="₹800 - ₹1,200 / day">₹800 - ₹1,200 / day</option>
+                            <option value="₹1,200 - ₹2,000 / day">₹1,200 - ₹2,000 / day</option>
+                            <option value="₹15,000 - ₹25,000 / month">₹15,000 - ₹25,000 / month</option>
+                            <option value="₹25,000 - ₹40,000 / month">₹25,000 - ₹40,000 / month</option>
+                            <option value="₹40,000 - ₹60,000 / month">₹40,000 - ₹60,000 / month</option>
+                            <option value="₹60,000+ / month">₹60,000+ / month</option>
+                            {profileData.currentSalary && ![
+                              '₹500 - ₹800 / day',
+                              '₹800 - ₹1,200 / day',
+                              '₹1,200 - ₹2,000 / day',
+                              '₹15,000 - ₹25,000 / month',
+                              '₹25,000 - ₹40,000 / month',
+                              '₹40,000 - ₹60,000 / month',
+                              '₹60,000+ / month'
+                            ].includes(profileData.currentSalary) && (
+                              <option value={profileData.currentSalary}>{profileData.currentSalary}</option>
+                            )}
                           </select>
                         </div>
 
                         {/* Input */}
                         <div className="form-group col-lg-3 col-md-12">
-                          <label>Expected Salary($)</label>
+                          <label>Expected Pay / Compensation (₹)</label>
                           <select
                             className="chosen-select"
                             name="expectedSalary"
                             value={profileData.expectedSalary}
                             onChange={(e) => setProfileData({ ...profileData, expectedSalary: e.target.value })}
                           >
-                            <option value="">Select Salary</option>
-                            <option>120-350 K</option>
-                            <option>40-70 K</option>
-                            <option>50-80 K</option>
-                            <option>60-90 K</option>
-                            <option>70-100 K</option>
-                            <option>100-150 K</option>
+                            <option value="">Select Compensation</option>
+                            <option value="₹500 - ₹800 / day">₹500 - ₹800 / day</option>
+                            <option value="₹800 - ₹1,200 / day">₹800 - ₹1,200 / day</option>
+                            <option value="₹1,200 - ₹2,000 / day">₹1,200 - ₹2,000 / day</option>
+                            <option value="₹15,000 - ₹25,000 / month">₹15,000 - ₹25,000 / month</option>
+                            <option value="₹25,000 - ₹40,000 / month">₹25,000 - ₹40,000 / month</option>
+                            <option value="₹40,000 - ₹60,000 / month">₹40,000 - ₹60,000 / month</option>
+                            <option value="₹60,000+ / month">₹60,000+ / month</option>
+                            {profileData.expectedSalary && ![
+                              '₹500 - ₹800 / day',
+                              '₹800 - ₹1,200 / day',
+                              '₹1,200 - ₹2,000 / day',
+                              '₹15,000 - ₹25,000 / month',
+                              '₹25,000 - ₹40,000 / month',
+                              '₹40,000 - ₹60,000 / month',
+                              '₹60,000+ / month'
+                            ].includes(profileData.expectedSalary) && (
+                              <option value={profileData.expectedSalary}>{profileData.expectedSalary}</option>
+                            )}
                           </select>
                         </div>
 
@@ -658,7 +691,7 @@ const CandidateMyProfilePage = () => {
                           <input
                             type="text"
                             name="experience"
-                            placeholder="5-10 Years"
+                            placeholder="e.g. 1-3 Years / Fresher"
                             value={profileData.experience}
                             onChange={(e) => setProfileData({ ...profileData, experience: e.target.value })}
                           />
@@ -674,10 +707,10 @@ const CandidateMyProfilePage = () => {
                             onChange={(e) => setProfileData({ ...profileData, age: e.target.value })}
                           >
                             <option value="">Select Age</option>
+                            <option>18 - 22 Years</option>
                             <option>23 - 27 Years</option>
-                            <option>24 - 28 Years</option>
-                            <option>25 - 29 Years</option>
-                            <option>26 - 30 Years</option>
+                            <option>28 - 35 Years</option>
+                            <option>35+ Years</option>
                           </select>
                         </div>
 
@@ -687,7 +720,7 @@ const CandidateMyProfilePage = () => {
                           <input
                             type="text"
                             name="education"
-                            placeholder="Certificate"
+                            placeholder="10th / 12th / Diploma / Graduate"
                             value={profileData.education}
                             onChange={(e) => setProfileData({ ...profileData, education: e.target.value })}
                           />
@@ -695,11 +728,11 @@ const CandidateMyProfilePage = () => {
 
                         {/* Input */}
                         <div className="form-group col-lg-6 col-md-12">
-                          <label>Languages</label>
+                          <label>Languages Known</label>
                           <input
                             type="text"
                             name="languages"
-                            placeholder="English, Turkish"
+                            placeholder="e.g. Hindi, English, Kannada, Tamil"
                             value={profileData.languages}
                             onChange={(e) => setProfileData({ ...profileData, languages: e.target.value })}
                           />
@@ -707,9 +740,9 @@ const CandidateMyProfilePage = () => {
 
                         {/* Search Select */}
                         <div className="form-group col-lg-6 col-md-12">
-                          <label>Categories </label>
+                          <label>Preferred Gig Categories</label>
                           <select
-                            data-placeholder="Categories"
+                            data-placeholder="Select Gig Categories"
                             className="chosen-select multiple"
                             multiple
                             name="categories"
@@ -722,26 +755,13 @@ const CandidateMyProfilePage = () => {
                               })
                             }
                           >
-                            <option value="Banking">Banking</option>
-                            <option value="Digital&Creative">Digital & Creative</option>
-                            <option value="Retail">Retail</option>
-                            <option value="Human Resources">Human Resources</option>
-                            <option value="Management">Management</option>
-                            <option value="IT & Software">IT & Software</option>
-                            <option value="Engineering">Engineering</option>
-                            <option value="Cloud Architecture">Cloud Architecture</option>
+                            {ALL_CATEGORY_VALUES.map((cat) => (
+                              <option key={cat} value={cat}>
+                                {cat}
+                              </option>
+                            ))}
                             {(profileData.categories || []).map((cat) => {
-                              const baseList = [
-                                'Banking',
-                                'Digital&Creative',
-                                'Retail',
-                                'Human Resources',
-                                'Management',
-                                'IT & Software',
-                                'Engineering',
-                                'Cloud Architecture',
-                              ];
-                              if (!baseList.includes(cat)) {
+                              if (!ALL_CATEGORY_VALUES.includes(cat)) {
                                 return (
                                   <option key={cat} value={cat}>
                                     {cat}
@@ -810,7 +830,7 @@ const CandidateMyProfilePage = () => {
                           <input
                             type="text"
                             name="facebook"
-                            placeholder="www.facebook.com/Invision"
+                            placeholder="https://www.facebook.com/yourusername"
                             value={socialData.facebook}
                             onChange={(e) => setSocialData({ ...socialData, facebook: e.target.value })}
                           />
@@ -818,11 +838,11 @@ const CandidateMyProfilePage = () => {
 
                         {/* Input */}
                         <div className="form-group col-lg-6 col-md-12">
-                          <label>Twitter</label>
+                          <label>X (Twitter)</label>
                           <input
                             type="text"
                             name="twitter"
-                            placeholder=""
+                            placeholder="https://x.com/yourusername"
                             value={socialData.twitter}
                             onChange={(e) => setSocialData({ ...socialData, twitter: e.target.value })}
                           />
@@ -834,13 +854,13 @@ const CandidateMyProfilePage = () => {
                           <input
                             type="text"
                             name="linkedin"
-                            placeholder=""
+                            placeholder="https://www.linkedin.com/in/yourusername"
                             value={socialData.linkedin}
                             onChange={(e) => setSocialData({ ...socialData, linkedin: e.target.value })}
                           />
                         </div>
 
-                        {/* Input */}
+                        {/* Temporarily commented out legacy social field
                         <div className="form-group col-lg-6 col-md-12">
                           <label>Google Plus</label>
                           <input
@@ -851,9 +871,10 @@ const CandidateMyProfilePage = () => {
                             onChange={(e) => setSocialData({ ...socialData, googlePlus: e.target.value })}
                           />
                         </div>
+                        */}
 
-                        {/* Input */}
-                        <div className="form-group col-lg-6 col-md-12">
+                        {/* Save Button */}
+                        <div className="form-group col-lg-12 col-md-12">
                           <button
                             className="theme-btn btn-style-one"
                             type="submit"
@@ -881,25 +902,28 @@ const CandidateMyProfilePage = () => {
                       <div className="row">
                         {/* Input */}
                         <div className="form-group col-lg-6 col-md-12">
-                          <label>Country</label>
+                          <label>State / Union Territory</label>
                           <select
                             className="chosen-select"
                             name="country"
                             value={contactData.country}
                             onChange={handleCountryChange}
                           >
-                            <option value="">Select Country</option>
-                            {Object.keys(LOCATION_DATA).map((c) => (
-                              <option key={c} value={c}>
-                                {c}
+                            <option value="">Select State / UT</option>
+                            {INDIA_STATES_AND_UTS.map((st) => (
+                              <option key={st.code} value={st.name}>
+                                {st.name}
                               </option>
                             ))}
+                            {contactData.country && !INDIA_STATES_AND_UTS.some((st) => st.name === contactData.country) && (
+                              <option value={contactData.country}>{contactData.country}</option>
+                            )}
                           </select>
                         </div>
 
                         {/* Input */}
                         <div className="form-group col-lg-6 col-md-12">
-                          <label>City</label>
+                          <label>City / District</label>
                           <select
                             className="chosen-select"
                             name="city"
@@ -908,7 +932,7 @@ const CandidateMyProfilePage = () => {
                             disabled={!contactData.country}
                           >
                             <option value="">
-                              {contactData.country ? 'Select City' : 'Select Country First'}
+                              {contactData.country ? 'Select City' : 'Select State / UT First'}
                             </option>
                             {cityOptions.map((ct) => (
                               <option key={ct} value={ct}>
@@ -920,53 +944,50 @@ const CandidateMyProfilePage = () => {
 
                         {/* Input */}
                         <div className="form-group col-lg-12 col-md-12">
-                          <label>Complete Address</label>
+                          <label>Complete Address (Locality, Street, 6-Digit PIN Code)</label>
                           <input
                             type="text"
                             name="address"
-                            placeholder="329 Queensberry Street, North Melbourne VIC 3051, Australia."
+                            placeholder="e.g. 14th Cross, Indiranagar, Bengaluru, Karnataka - 560038"
                             value={contactData.address}
                             onChange={(e) => setContactData({ ...contactData, address: e.target.value })}
                           />
                         </div>
 
-                        {/* Input */}
+                        {/* Temporarily commented out legacy location controls and static foreign map preview
                         <div className="form-group col-lg-6 col-md-12">
                           <label>Find On Map</label>
                           <input
                             type="text"
                             name="findOnMap"
-                            placeholder="329 Queensberry Street, North Melbourne VIC 3051, Australia."
+                            placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru, Karnataka - 560038"
                             value={contactData.findOnMap}
                             onChange={(e) => setContactData({ ...contactData, findOnMap: e.target.value })}
                           />
                         </div>
 
-                        {/* Input */}
                         <div className="form-group col-lg-3 col-md-12">
                           <label>Latitude</label>
                           <input
                             type="text"
                             name="latitude"
-                            placeholder="Melbourne"
+                            placeholder="12.9716"
                             value={contactData.latitude}
                             onChange={(e) => setContactData({ ...contactData, latitude: e.target.value })}
                           />
                         </div>
 
-                        {/* Input */}
                         <div className="form-group col-lg-3 col-md-12">
                           <label>Longitude</label>
                           <input
                             type="text"
                             name="longitude"
-                            placeholder="Melbourne"
+                            placeholder="77.5946"
                             value={contactData.longitude}
                             onChange={(e) => setContactData({ ...contactData, longitude: e.target.value })}
                           />
                         </div>
 
-                        {/* Input */}
                         <div className="form-group col-lg-12 col-md-12">
                           <button type="button" className="theme-btn btn-style-three">
                             Search Location
@@ -990,6 +1011,7 @@ const CandidateMyProfilePage = () => {
                             </div>
                           </div>
                         </div>
+                        */}
 
                         {/* Input */}
                         <div className="form-group col-lg-12 col-md-12">
@@ -1014,7 +1036,7 @@ const CandidateMyProfilePage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

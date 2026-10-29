@@ -640,11 +640,143 @@ const deleteProfile = async (req, res) => {
   }
 };
 
+/**
+ * Controller: Get Monthly Profile Views
+ * GET /api/employer/profile-views
+ */
+const getProfileViews = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'employer') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only employer accounts can access employer profile view metrics.'
+      });
+    }
+
+    const months = parseInt(req.query.months, 10) || 6;
+    const viewsData = await EmployerProfileService.getMonthlyProfileViews(userId, Math.min(Math.max(months, 1), 60));
+
+    return res.status(200).json({
+      success: true,
+      data: viewsData
+    });
+  } catch (error) {
+    console.error('[getEmployerProfileViews Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve profile views.'
+    });
+  }
+};
+
+/**
+ * Controller: Get Shortlisted Resumes & Count
+ * GET /api/employer/shortlists
+ */
+const getEmployerShortlists = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'employer') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only employer accounts can access shortlisted candidates.'
+      });
+    }
+
+    const shortlistsData = await EmployerProfileService.getEmployerShortlists(userId);
+
+    return res.status(200).json({
+      success: true,
+      count: shortlistsData.count,
+      candidates: shortlistsData.candidates
+    });
+  } catch (error) {
+    console.error('[getEmployerShortlists Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve shortlisted candidates.'
+    });
+  }
+};
+
+/**
+ * Controller: Get Employer Dashboard Statistics
+ * GET /api/employer/dashboard/stats
+ */
+const getEmployerStats = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'employer') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only employer accounts can access employer dashboard statistics.'
+      });
+    }
+
+    const stats = await EmployerProfileService.getEmployerDashboardStats(userId);
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        postedJobsCount: stats.postedJobsCount,
+        applicationsCount: stats.applicationsCount,
+        shortlistCount: stats.shortlistCount
+      }
+    });
+  } catch (error) {
+    console.error('[getEmployerStats Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve employer statistics.'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   uploadLogo,
   uploadCover,
-  deleteProfile
+  deleteProfile,
+  getProfileViews,
+  getEmployerShortlists,
+  getEmployerStats
 };
 

@@ -22337,3 +22337,54 @@ Work Section
 .overflow-hidden {
   overflow: hidden;
 }
+
+/* ==========================================================================
+   Employer / Company Logo Circular Presentation Consistency
+   Ensures company logos across all listings, hero showcase, dashboard,
+   application details, and profile pages display inside circular frames
+   without distortion (preserving aspect ratio via object-fit).
+   ========================================================================== */
+.company-logo {
+  border-radius: 50% !important;
+  overflow: hidden !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.company-logo img {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.company-block-three .company-logo {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+.job-block .company-logo {
+  width: 50px !important;
+  height: 50px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+.job-block-seven .company-logo {
+  width: 100px !important;
+  height: 100px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+
+.company-widget .company-logo {
+  width: 60px !important;
+  height: 60px !important;
+  border-radius: 50% !important;
+  overflow: hidden !important;
+}
+

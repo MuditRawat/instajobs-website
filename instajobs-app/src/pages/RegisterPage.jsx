@@ -233,7 +233,7 @@ const RegisterPage = () => {
           {/* Login Form */}
           <div className="login-form default-form">
             <div className="form-inner">
-              <h3>Create a Free Superio Account</h3>
+              <h3>Create a Free instajobs Account</h3>
 
               {message && (
                 <div className="alert alert-success" style={{ marginBottom: '15px', borderRadius: '8px' }}>

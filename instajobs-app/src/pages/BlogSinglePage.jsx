@@ -1,14 +1,101 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useParams, useLocation } from 'react-router-dom';
 import Header from '../components/common/Header';
+import Footer from '../components/common/Footer';
+import { contentService } from '../services/contentService';
+import { formatIndianDate } from '../utils/jobFormatters';
 
 const BlogSinglePage = () => {
   const { id } = useParams();
   const location = useLocation();
 
+  const [blog, setBlog] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    const loadBlog = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await contentService.getBlogByIdOrSlug(id);
+        if (!data) {
+          setError('The requested article was not found or is currently unpublished.');
+        } else {
+          setBlog(data);
+        }
+      } catch (err) {
+        console.error('Error fetching blog single:', err);
+        setError(err.message || 'The requested article could not be loaded.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      loadBlog();
+    }
   }, [id]);
+
+  if (loading) {
+    return (
+      <div className="page-wrapper">
+        <span className="header-span"></span>
+        <Header />
+        <div className="auto-container py-5 my-5 text-center">
+          <div className="spinner-border text-primary" role="status">
+            <span className="sr-only">Loading article...</span>
+          </div>
+          <p className="text-muted mt-3 small">Loading article details...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !blog) {
+    return (
+      <div className="page-wrapper">
+        <span className="header-span"></span>
+        <Header />
+        <div className="auto-container py-5 my-5 text-center">
+          <div
+            style={{
+              width: '70px',
+              height: '70px',
+              borderRadius: '50%',
+              backgroundColor: '#fce8e6',
+              color: '#d93025',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '32px',
+              marginBottom: '16px'
+            }}
+          >
+            <i className="la la-exclamation-circle"></i>
+          </div>
+          <h4 className="font-weight-bold mb-2">Article Not Found</h4>
+          <p className="text-muted small mb-4" style={{ maxWidth: '460px', margin: '0 auto' }}>
+            {error || 'This article does not exist, has been removed, or is not yet published.'}
+          </p>
+          <div className="d-flex justify-content-center gap-3">
+            <Link to="/blogs" className="theme-btn btn-style-one mr-2">
+              Browse All Articles
+            </Link>
+            <Link to="/" className="theme-btn btn-style-three">
+              Return Home
+            </Link>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const postDate = blog.published_at || blog.created_at;
 
   return (
     <div className="page-wrapper">
@@ -19,338 +106,112 @@ const BlogSinglePage = () => {
       <section className="blog-single">
         <div className="auto-container">
           <div className="upper-box">
-            <h3>Keep your face always toward the sunshine - and shadows will fall behind you.</h3>
+            <h3>{blog.title}</h3>
             <ul className="post-info">
-              <li>
-                <span className="thumb">
-                  <img src="/images/resource/thumb-1.png" alt="" />
-                </span>{' '}
-                Alison Dawn
-              </li>
-              <li>August 31, 2021</li>
-              <li>12 Comment</li>
+              {blog.author_name && (
+                <li>
+                  <span className="thumb">
+                    {blog.author_avatar ? (
+                      <img src={blog.author_avatar} alt={blog.author_name} />
+                    ) : (
+                      <i className="la la-user-circle" style={{ fontSize: '24px', verticalAlign: 'middle' }}></i>
+                    )}
+                  </span>{' '}
+                  {blog.author_name}
+                </li>
+              )}
+              {postDate && <li>{formatIndianDate(postDate)}</li>}
+              {blog.category && (
+                <li>
+                  <span className="badge bg-light text-primary border">{blog.category}</span>
+                </li>
+              )}
             </ul>
           </div>
         </div>
 
-        <figure className="main-image">
-          <img src="/images/resource/blog-single.jpg" alt="" />
-        </figure>
+        {blog.featured_image && (
+          <figure className="main-image">
+            <img
+              src={blog.featured_image}
+              alt={blog.title}
+              style={{ maxHeight: '500px', width: '100%', objectFit: 'cover' }}
+            />
+          </figure>
+        )}
 
         <div className="auto-container">
-          <h4>Course Description</h4>
-          <p>
-            Aliquam hendrerit sollicitudin purus, quis rutrum mi accumsan nec. Quisque bibendum orci
-            ac nibh facilisis, at malesuada orci congue. Nullam tempus sollicitudin cursus. Ut et
-            adipiscing erat. Curabitur this is a text link libero tempus congue.
-          </p>
-          <p>
-            Duis mattis laoreet neque, et ornare neque sollicitudin at. Proin sagittis dolor sed mi
-            elementum pretium. Donec et justo ante. Vivamus egestas sodales est, eu rhoncus urna
-            semper eu. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur
-            ridiculus mus. Integer tristique elit lobortis purus bibendum, quis dictum metus mattis.
-            Phasellus posuere felis sed eros porttitor mattis. Curabitur massa magna, tempor in
-            blandit id, porta in ligula. Aliquam laoreet nisl massa, at interdum mauris sollicitudin
-            et.
-          </p>
-          <blockquote className="blockquote-style-one mb-5 mt-5">
-            <p>
-              Aliquam hendrerit sollicitudin purus, quis rutrum mi accumsan nec. Quisque bibendum orci
-              ac nibh facilisis, at malesuada orci congue.{' '}
-            </p>
-            <cite>Luis Pickford</cite>
-          </blockquote>
-          <h4>What you'll learn</h4>
-          <ul className="list-style-four">
-            <li>Become a UI/UX designer.</li>
-            <li>Build a UI project from beginning to end.</li>
-            <li>You will be able to start earning money Figma skills.</li>
-            <li>Work with colors & fonts.</li>
-            <li>You will create your own UI Kit.</li>
-            <li>Become a UI/UX designer.</li>
-            <li>Build a UI project from beginning to end.</li>
-            <li>You will be able to start earning money Figma skills.</li>
-            <li>Work with colors & fonts.</li>
-            <li>You will create your own UI Kit.</li>
-          </ul>
-          <figure className="image">
-            <img src="/images/resource/post-img.jpg" alt="" />
-          </figure>
-          <h4>Requirements</h4>
-          <ul className="list-style-three">
-            <li>
-              We do not require any previous experience or pre-defined skills to take this course. A
-              great orientation would be enough to master UI/UX design.
-            </li>
-            <li>A computer with a good internet connection.</li>
-            <li>Adobe Photoshop (OPTIONAL)</li>
-          </ul>
+          {blog.excerpt && (
+            <div className="lead mb-4 font-italic text-dark" style={{ borderLeft: '4px solid #1967d2', paddingLeft: '16px' }}>
+              {blog.excerpt}
+            </div>
+          )}
 
-          {/* Other Options */}
+          {/* Render content */}
+          <div
+            className="blog-content-body text mb-5"
+            style={{ fontSize: '16px', lineHeight: '1.8', color: '#495057', whiteSpace: 'pre-line' }}
+          >
+            {blog.content || blog.body || 'No full content provided for this article.'}
+          </div>
+
+          {/* Other Options / Tags */}
           <div className="other-options">
             <div className="social-share">
               <h5>Share this post</h5>
-              <a href="#" className="facebook">
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="facebook"
+              >
                 <i className="fab fa-facebook-f"></i> Facebook
               </a>{' '}
-              <a href="#" className="twitter">
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}&text=${encodeURIComponent(blog.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="twitter"
+              >
                 <i className="fab fa-twitter"></i> Twitter
               </a>{' '}
-              <a href="#" className="google">
-                <i className="fab fa-google"></i> Google+
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="linkedin"
+                style={{ backgroundColor: '#0077b5', color: '#fff', padding: '10px 20px', borderRadius: '8px' }}
+              >
+                <i className="fab fa-linkedin-in"></i> LinkedIn
               </a>
             </div>
 
-            <div className="tags">
-              <a href="#">App</a>
-              <a href="#">Design</a>
-              <a href="#">Digital</a>
-            </div>
-          </div>
-
-          {/* Post Control */}
-          <div className="post-control">
-            <div className="prev-post">
-              <span className="icon flaticon-back"></span>
-              <span className="title">Previous Post</span>
-              <h5>
-                <a href="#">Given Set was without from god divide rule Hath</a>
-              </h5>
-            </div>
-            <div className="next-post">
-              <span className="icon flaticon-next"></span>
-              <span className="title">Next Post</span>
-              <h5>
-                <a href="#">Tree earth fowl given moveth deep lesser After</a>
-              </h5>
-            </div>
-          </div>
-
-          {/* Comments area */}
-          <div className="comments-area">
-            {/* Comment Box */}
-            <div className="comment-box">
-              <h4>Comment</h4>
-              {/* Comment */}
-              <div className="comment">
-                <div className="user-thumb">
-                  <img src="/images/resource/avatar-1.jpg" alt="" />
-                </div>
-                <div className="comment-info">
-                  <div className="user-name">Oscar Cafeo</div>
-                  <div className="title">Beautiful courses</div>
-                </div>
-                <div className="text">
-                  Far much that one rank beheld bluebird after outside ignobly allegedly more when oh
-                  arrogantly vehement tantaneously eel valiantly petted this along across
-                  highhandedly much.
-                </div>
+            {Array.isArray(blog.tags) && blog.tags.length > 0 && (
+              <div className="tags">
+                {blog.tags.map((tag, idx) => (
+                  <span key={idx} className="badge bg-light text-dark border mr-1">
+                    #{tag}
+                  </span>
+                ))}
               </div>
-            </div>
-
-            <div className="comment-box">
-              {/* Comment */}
-              <div className="comment">
-                <div className="user-thumb">
-                  <img src="/images/resource/avatar-2.jpg" alt="" />
-                </div>
-                <div className="comment-info">
-                  <div className="user-name">Alex Morgan</div>
-                  <div className="title">Beautiful courses</div>
-                </div>
-                <div className="text">
-                  Far much that one rank beheld bluebird after outside ignobly allegedly more when oh
-                  arrogantly vehement tantaneously eel valiantly petted this along across
-                  highhandedly much.
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
-          {/* Comment Form */}
-          <div className="comment-form default-form">
-            <h4>Leave your thought here</h4>
-            <form onSubmit={(e) => e.preventDefault()}>
-              <div className="row clearfix">
-                <div className="col-lg-6 col-md-12 col-sm-12 form-group">
-                  <label>Your Name</label>
-                  <input type="text" name="username" placeholder="Name" required />
-                </div>
-                <div className="col-lg-6 col-md-12 col-sm-12 form-group">
-                  <label>Your Email</label>
-                  <input type="email" name="email" placeholder="Email" required />
-                </div>
-                <div className="col-lg-12 col-md-12 col-sm-12 form-group">
-                  <label>Your Comment</label>
-                  <textarea name="message" placeholder="Write Comment"></textarea>
-                </div>
-                <div className="col-lg-12 col-md-12 col-sm-12 form-group">
-                  <button className="theme-btn btn-style-one" type="submit" name="submit-form">
-                    Post Comment
-                  </button>
-                </div>
-              </div>
-            </form>
+          {/* Post Back Navigation */}
+          <div className="post-control my-4 pt-3 border-top d-flex justify-content-between align-items-center">
+            <Link to="/blogs" className="theme-btn btn-style-three">
+              <i className="fa fa-arrow-left mr-2"></i> Back to All Articles
+            </Link>
+            <Link to="/jobs" className="theme-btn btn-style-one">
+              Explore Active Gigs <i className="fa fa-arrow-right ml-2"></i>
+            </Link>
           </div>
-          {/* End Comment Form */}
         </div>
       </section>
       {/* End Blog Single */}
 
-      {/* Main Footer alternate5 */}
-      <footer className="main-footer alternate5">
-        <div className="auto-container">
-          <div className="widgets-section">
-            <div className="row">
-              <div className="big-column col-xl-4 col-lg-3 col-md-12">
-                <div className="footer-column about-widget">
-                  <div className="logo">
-                    <Link to="/">
-                      <img src="/images/logo.svg" alt="" />
-                    </Link>
-                  </div>
-                  <p className="phone-num">
-                    <span>Call us </span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </p>
-                  <p className="address">
-                    329 Queensberry Street, North Melbourne VIC
-                    <br /> 3051, Australia. <br />
-                    <a href="mailto:support@superio.com" className="email">
-                      support@superio.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="big-column col-xl-8 col-lg-9 col-md-12">
-                <div className="row">
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Candidates</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/jobs">Browse Jobs</Link>
-                          </li>
-                          <li>
-                            <Link to="/jobs">Browse Categories</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard">Candidate Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/job-alerts">Job Alerts</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/shortlisted-jobs">My Bookmarks</Link>
-                          </li>
-                          <li>
-                            <Link to="/pricing">Job Packages</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Employers</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Browse Candidates</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard">Employer Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard/post-job">Add Job</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">About Us</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/about">About Us</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/blogs">Blog</Link>
-                          </li>
-                          <li>
-                            <Link to="/contact">Contact</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">Helpful Resources</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Site Map</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms of Use</Link>
-                          </li>
-                          <li>
-                            <Link to={location.pathname} onClick={(e) => e.preventDefault()}>Privacy Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Security Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Accessibility Center</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <div className="auto-container">
-            <div className="outer-box">
-              <div className="copyright-text">
-                © 2021 <Link to="/">Superio</Link>. All Right Reserved.
-              </div>
-              <div className="social-links">
-                <a href="#">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Main Footer */}
+      <Footer />
     </div>
   );
 };

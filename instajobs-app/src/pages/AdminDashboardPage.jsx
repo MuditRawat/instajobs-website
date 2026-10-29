@@ -4,25 +4,19 @@ import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
 import { adminService } from '../services/adminService';
 import { useAuth } from '../context/AuthContext';
+import { ALL_CATEGORY_VALUES } from '../constants/gigTaxonomy';
+import { INDIA_STATES_AND_UTS } from '../constants/indiaLocations';
+import { formatSalary, formatIndianDate, formatIndianNumber } from '../utils/jobFormatters';
 
-const CATEGORY_OPTIONS = [
-  'Banking',
-  'Digital&Creative',
-  'Retail',
-  'Human Resources',
-  'Management',
-  'Accounting / Finance',
-  'IT'
-];
+const CATEGORY_OPTIONS = ALL_CATEGORY_VALUES;
 
-const COUNTRY_OPTIONS = [
-  'Australia',
-  'Pakistan',
-  'China',
-  'Japan',
+const LOCATION_OPTIONS = [
   'India',
-  'United States',
-  'United Kingdom'
+  ...INDIA_STATES_AND_UTS.map((st) => st.name),
+  // Retain legacy foreign options for backward compatibility filtering of existing records
+  'Australia',
+  'United Kingdom',
+  'United States'
 ];
 
 const AdminDashboardPage = () => {
@@ -78,6 +72,7 @@ const AdminDashboardPage = () => {
     confirmButtonClass: ''
   });
   const [actionLoading, setActionLoading] = useState(false);
+  const [togglingEmployerId, setTogglingEmployerId] = useState(null);
 
   // Detail Modal State
   const [detailModal, setDetailModal] = useState({
@@ -324,6 +319,51 @@ const AdminDashboardPage = () => {
     }
   };
 
+  // Toggle AI Interview access for an employer (Admin feature gate)
+  const handleToggleAiInterviewAccess = async (employerId, currentAccess) => {
+    if (togglingEmployerId) return;
+    const targetAccess = !currentAccess;
+    try {
+      setTogglingEmployerId(employerId);
+      const res = await adminService.updateEmployerAiInterviewAccess(employerId, targetAccess);
+
+      const resolvedAccess = res?.employer?.ai_interview_enabled !== undefined
+        ? Boolean(res.employer.ai_interview_enabled)
+        : targetAccess;
+
+      setEmployers((prev) =>
+        prev.map((emp) =>
+          emp.id === employerId ? { ...emp, ai_interview_enabled: resolvedAccess } : emp
+        )
+      );
+
+      if (detailModal.isOpen && detailModal.employer?.id === employerId) {
+        setDetailModal((prev) => ({
+          ...prev,
+          employer: {
+            ...prev.employer,
+            ai_interview_enabled: resolvedAccess
+          }
+        }));
+      }
+
+      setFeedback({
+        type: 'success',
+        message: res.message || `AI Interview access has been ${resolvedAccess ? 'enabled' : 'disabled'} for this employer.`
+      });
+      setTimeout(() => setFeedback(null), 4000);
+    } catch (err) {
+      console.error('[AdminDashboard] Failed to toggle AI Interview access:', err);
+      setFeedback({
+        type: 'danger',
+        message: err.message || 'Failed to update AI Interview access.'
+      });
+      setTimeout(() => setFeedback(null), 6000);
+    } finally {
+      setTogglingEmployerId(null);
+    }
+  };
+
   // Open Employer Detail Modal with parallel jobs loading
   const openDetailModal = async (employerId) => {
     setDetailModal({
@@ -368,13 +408,9 @@ const AdminDashboardPage = () => {
     }
   };
 
-  // Helper for formatting salary
+  // Helper for formatting salary using India-first gig formatters
   const formatJobSalary = (min, max, rate) => {
-    if (!min && !max) return 'Negotiable';
-    const rateStr = rate ? ` / ${rate}` : '';
-    if (min && max) return `$${Number(min).toLocaleString()} - $${Number(max).toLocaleString()}${rateStr}`;
-    if (min) return `From $${Number(min).toLocaleString()}${rateStr}`;
-    return `Up to $${Number(max).toLocaleString()}${rateStr}`;
+    return formatSalary({ salary_min: min, salary_max: max, salary_rate: rate });
   };
 
   // Render Status Badge helper
@@ -759,17 +795,17 @@ const AdminDashboardPage = () => {
                         </select>
                       </div>
 
-                      {/* Country Filter */}
+                      {/* Country / State Filter */}
                       <div className="d-flex align-items-center">
-                        <span className="text-muted small mr-1 font-weight-bold">Country:</span>
+                        <span className="text-muted small mr-1 font-weight-bold">Location:</span>
                         <select
                           className="form-control form-control-sm border bg-white"
-                          style={{ width: 'auto', minWidth: '120px' }}
+                          style={{ width: 'auto', minWidth: '130px' }}
                           value={countryFilter}
                           onChange={handleCountryChange}
                         >
-                          <option value="all">All Countries</option>
-                          {COUNTRY_OPTIONS.map((c) => (
+                          <option value="all">All Locations</option>
+                          {LOCATION_OPTIONS.map((c) => (
                             <option key={c} value={c}>
                               {c}
                             </option>
@@ -858,6 +894,7 @@ const AdminDashboardPage = () => {
                                 <th>Contact</th>
                                 <th>Location</th>
                                 <th>Approval Status</th>
+                                <th>AI Interview</th>
                                 <th>Registered</th>
                                 <th style={{ minWidth: '180px', textAlign: 'right' }}>Actions</th>
                               </tr>
@@ -865,17 +902,14 @@ const AdminDashboardPage = () => {
                             <tbody>
                               {employers.map((emp) => {
                                 const createdDateStr = emp.created_at
-                                  ? new Date(emp.created_at).toLocaleDateString('en-US', {
-                                      month: 'short',
-                                      day: 'numeric',
-                                      year: 'numeric'
-                                    })
+                                  ? formatIndianDate(emp.created_at)
                                   : 'N/A';
                                 const status = (emp.approval_status || 'pending').toLowerCase();
                                 const companyLogo = emp.logo_url || '/images/resource/company-logo/1-1.png';
                                 const companyName = emp.company_name || 'Unnamed Company';
                                 const companyEmail = emp.company_email || emp.user?.email || 'No email provided';
                                 const locationStr = [emp.city, emp.country].filter(Boolean).join(', ') || 'Not specified';
+                                const aiEnabled = Boolean(emp.ai_interview_enabled);
 
                                 return (
                                   <tr key={emp.id}>
@@ -887,7 +921,7 @@ const AdminDashboardPage = () => {
                                           style={{
                                             width: '42px',
                                             height: '42px',
-                                            borderRadius: '8px',
+                                            borderRadius: '50%',
                                             objectFit: 'cover',
                                             marginRight: '12px',
                                             border: '1px solid #e2e8f0'
@@ -946,6 +980,27 @@ const AdminDashboardPage = () => {
                                       </span>
                                     </td>
                                     <td>{renderStatusBadge(emp.approval_status)}</td>
+                                    <td>
+                                      <button
+                                        type="button"
+                                        className={`btn btn-sm ${aiEnabled ? 'btn-success' : 'btn-outline-secondary'}`}
+                                        title={aiEnabled ? 'Click to disable AI Interview access' : 'Click to enable AI Interview access'}
+                                        onClick={() => handleToggleAiInterviewAccess(emp.id, aiEnabled)}
+                                        disabled={togglingEmployerId === emp.id}
+                                        style={{
+                                          padding: '3px 10px',
+                                          borderRadius: '20px',
+                                          fontSize: '11px',
+                                          fontWeight: '600',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <i className={`la ${togglingEmployerId === emp.id ? 'la-spinner la-spin' : aiEnabled ? 'la-check-circle' : 'la-times-circle'}`}></i>
+                                        {togglingEmployerId === emp.id ? 'Updating...' : aiEnabled ? 'Enabled' : 'Disabled'}
+                                      </button>
+                                    </td>
                                     <td>
                                       <span className="small text-muted">{createdDateStr}</span>
                                     </td>
@@ -1208,7 +1263,7 @@ const AdminDashboardPage = () => {
                           style={{
                             width: '64px',
                             height: '64px',
-                            borderRadius: '12px',
+                            borderRadius: '50%',
                             objectFit: 'cover',
                             marginRight: '18px',
                             border: '1px solid #e2e8f0'
@@ -1349,6 +1404,28 @@ const AdminDashboardPage = () => {
                                   <i className={`la ${detailModal.employer.allow_in_search ? 'la-check' : 'la-times'} mr-1`}></i>
                                   {detailModal.employer.allow_in_search ? 'Allow in Search' : 'Hidden from Search'}
                                 </span>
+                              </div>
+                              <div className="col-md-6 mb-2">
+                                <strong className="d-block small text-muted">AI Interview Feature:</strong>
+                                <div className="d-flex align-items-center mt-1" style={{ gap: '8px' }}>
+                                  <span className={`badge ${detailModal.employer.ai_interview_enabled ? 'badge-success' : 'badge-secondary'} px-2 py-1`}>
+                                    <i className={`la ${detailModal.employer.ai_interview_enabled ? 'la-check' : 'la-times'} mr-1`}></i>
+                                    {detailModal.employer.ai_interview_enabled ? 'Access Enabled' : 'Access Disabled'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className={`btn btn-xs ${detailModal.employer.ai_interview_enabled ? 'btn-outline-danger' : 'btn-outline-success'}`}
+                                    onClick={() => handleToggleAiInterviewAccess(detailModal.employer.id, Boolean(detailModal.employer.ai_interview_enabled))}
+                                    disabled={togglingEmployerId === detailModal.employer.id}
+                                    style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
+                                  >
+                                    {togglingEmployerId === detailModal.employer.id
+                                      ? 'Updating...'
+                                      : detailModal.employer.ai_interview_enabled
+                                      ? 'Disable Access'
+                                      : 'Enable Access'}
+                                  </button>
+                                </div>
                               </div>
                               <div className="col-12 mb-2">
                                 <strong className="d-block small text-muted">Categories:</strong>
@@ -1558,11 +1635,7 @@ const AdminDashboardPage = () => {
                               <tbody>
                                 {detailModal.jobs.map((job) => {
                                   const jobPostedDate = job.created_at
-                                    ? new Date(job.created_at).toLocaleDateString('en-US', {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        year: 'numeric'
-                                      })
+                                    ? formatIndianDate(job.created_at)
                                     : 'N/A';
 
                                   return (

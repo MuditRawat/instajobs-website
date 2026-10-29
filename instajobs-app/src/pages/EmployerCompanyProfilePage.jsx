@@ -6,14 +6,36 @@ import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import { employerService } from '../services/employerService';
 import { useAuth } from '../context/AuthContext';
 
-const DEFAULT_COUNTRIES = ['Australia', 'Pakistan', 'China', 'Japan', 'India'];
+import {
+  INDIA_STATES_AND_UTS,
+  STATE_CITY_MAP,
+  TOP_INDIAN_HUBS
+} from '../constants/indiaLocations';
+
+const DEFAULT_COUNTRIES = ['India', 'Australia', 'Pakistan', 'China', 'Japan'];
+
+// Indian cities aggregated from top hubs and state city map for India
+const INDIA_DEFAULT_CITIES = [
+  ...new Set([
+    ...TOP_INDIAN_HUBS.map(c => c.name),
+    ...(STATE_CITY_MAP['Karnataka'] || []),
+    ...(STATE_CITY_MAP['Maharashtra'] || []),
+    ...(STATE_CITY_MAP['Delhi'] || []),
+    ...(STATE_CITY_MAP['Telangana'] || []),
+    ...(STATE_CITY_MAP['Tamil Nadu'] || []),
+    ...(STATE_CITY_MAP['Uttar Pradesh'] || []),
+    ...(STATE_CITY_MAP['Haryana'] || []),
+    ...(STATE_CITY_MAP['Gujarat'] || []),
+    ...(STATE_CITY_MAP['West Bengal'] || [])
+  ])
+];
 
 const COUNTRY_CITY_MAP = {
+  India: INDIA_DEFAULT_CITIES,
   Australia: ['Melbourne', 'Sydney', 'Brisbane', 'Perth'],
   Pakistan: ['Karachi', 'Lahore', 'Islamabad', 'Rawalpindi'],
   China: ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen'],
-  Japan: ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama'],
-  India: ['Mumbai', 'Delhi', 'Bangalore', 'Hyderabad']
+  Japan: ['Tokyo', 'Osaka', 'Kyoto', 'Yokohama']
 };
 
 const DEFAULT_CATEGORIES = ['Banking', 'Digital&Creative', 'Retail', 'Human Resources', 'Management'];
@@ -44,8 +66,8 @@ const EmployerCompanyProfilePage = () => {
     social_twitter: '',
     social_linkedin: '',
     social_google_plus: '',
-    country: 'Australia',
-    city: 'Melbourne',
+    country: 'India',
+    city: 'Bengaluru',
     complete_address: '',
     latitude: '',
     longitude: '',
@@ -68,9 +90,9 @@ const EmployerCompanyProfilePage = () => {
           const prof = res.profile;
           const detectedAuthMethod = res.user?.authMethod || user?.authMethod || 'email';
           setAuthMethod(detectedAuthMethod);
-          const initialCountry = prof.country || 'Australia';
-          const validCities = COUNTRY_CITY_MAP[initialCountry] || ['Melbourne'];
-          const initialCity = prof.city || validCities[0] || 'Melbourne';
+          const initialCountry = prof.country || 'India';
+          const validCities = COUNTRY_CITY_MAP[initialCountry] || ['Bengaluru'];
+          const initialCity = prof.city || validCities[0] || 'Bengaluru';
 
           setFormData({
             company_name: prof.company_name || '',
@@ -353,13 +375,13 @@ const EmployerCompanyProfilePage = () => {
     }
   };
 
-  const mapLat = formData.latitude !== '' && formData.latitude !== null ? formData.latitude : '-37.817085';
-  const mapLng = formData.longitude !== '' && formData.longitude !== null ? formData.longitude : '144.955631';
+  const mapLat = formData.latitude !== '' && formData.latitude !== null ? formData.latitude : '12.9716';
+  const mapLng = formData.longitude !== '' && formData.longitude !== null ? formData.longitude : '77.5946';
   const mapIframeUrl = `https://maps.google.com/maps?q=${encodeURIComponent(mapLat)},${encodeURIComponent(mapLng)}&z=12&output=embed`;
 
   // Merge dynamic options if stored value is outside default list
   const countryOptions = [...new Set([...DEFAULT_COUNTRIES, formData.country])].filter(Boolean);
-  const availableCities = COUNTRY_CITY_MAP[formData.country] || ['Melbourne', 'Sydney', 'Brisbane', 'Perth'];
+  const availableCities = COUNTRY_CITY_MAP[formData.country] || ['Bengaluru', 'Mumbai', 'Delhi', 'Hyderabad'];
   const cityOptions = [...new Set([...availableCities, formData.city])].filter(Boolean);
 
   const categoryOptionsMap = [...new Set([...DEFAULT_CATEGORIES, ...formData.categories])].filter(Boolean);
@@ -403,9 +425,10 @@ const EmployerCompanyProfilePage = () => {
             </li>
             <li>
               <Link to="/employer-dashboard/shortlisted-resumes">
-                <i className="la la-bookmark-o"></i> Shortlisted Resumes
+                <i className="la la-bookmark-o"></i> Shortlisted Applicants
               </Link>
             </li>
+            {/* Temporarily hidden employer dashboard tabs
             <li>
               <Link to="/employer-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -421,6 +444,7 @@ const EmployerCompanyProfilePage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/employer-dashboard/company-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -496,7 +520,7 @@ const EmployerCompanyProfilePage = () => {
                               <img
                                 src={formData.logo_url}
                                 alt="Company Logo"
-                                style={{ width: '40px', height: '40px', borderRadius: '8px', marginLeft: '10px', objectFit: 'cover', verticalAlign: 'middle' }}
+                                style={{ width: '40px', height: '40px', borderRadius: '50%', marginLeft: '10px', objectFit: 'cover', verticalAlign: 'middle' }}
                               />
                             )}
                             {logoFileName && <span style={{ marginLeft: '10px', fontSize: '13px', color: '#696969' }}>{logoFileName}</span>}
@@ -704,19 +728,19 @@ const EmployerCompanyProfilePage = () => {
                               name="social_facebook"
                               value={formData.social_facebook}
                               onChange={handleChange}
-                              placeholder="www.facebook.com/Invision"
+                              placeholder="https://www.facebook.com/yourusername"
                             />
                           </div>
 
                           {/* Twitter */}
                           <div className="form-group col-lg-6 col-md-12">
-                            <label>Twitter</label>
+                            <label>X (Twitter)</label>
                             <input
                               type="text"
                               name="social_twitter"
                               value={formData.social_twitter}
                               onChange={handleChange}
-                              placeholder=""
+                              placeholder="https://x.com/yourusername"
                             />
                           </div>
 
@@ -728,11 +752,11 @@ const EmployerCompanyProfilePage = () => {
                               name="social_linkedin"
                               value={formData.social_linkedin}
                               onChange={handleChange}
-                              placeholder=""
+                              placeholder="https://www.linkedin.com/in/yourusername"
                             />
                           </div>
 
-                          {/* Google Plus */}
+                          {/* Temporarily commented out legacy social field
                           <div className="form-group col-lg-6 col-md-12">
                             <label>Google Plus</label>
                             <input
@@ -743,9 +767,10 @@ const EmployerCompanyProfilePage = () => {
                               placeholder=""
                             />
                           </div>
+                          */}
 
                           {/* Save Button */}
-                          <div className="form-group col-lg-6 col-md-12">
+                          <div className="form-group col-lg-12 col-md-12">
                             <button className="theme-btn btn-style-one" type="submit" disabled={saving}>
                               {saving ? 'Saving...' : 'Save'}
                             </button>
@@ -808,11 +833,11 @@ const EmployerCompanyProfilePage = () => {
                               name="complete_address"
                               value={formData.complete_address}
                               onChange={handleChange}
-                              placeholder="329 Queensberry Street, North Melbourne VIC 3051, Australia."
+                              placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru, Karnataka - 560038"
                             />
                           </div>
 
-                          {/* Find On Map */}
+                          {/* Temporarily commented out legacy location controls
                           <div className="form-group col-lg-6 col-md-12">
                             <label>Find On Map</label>
                             <input
@@ -822,11 +847,10 @@ const EmployerCompanyProfilePage = () => {
                               onChange={(e) =>
                                 setFormData((prev) => ({ ...prev, complete_address: e.target.value }))
                               }
-                              placeholder="329 Queensberry Street, North Melbourne VIC 3051, Australia."
+                              placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru, Karnataka - 560038"
                             />
                           </div>
 
-                          {/* Latitude */}
                           <div className="form-group col-lg-3 col-md-12">
                             <label>Latitude</label>
                             <input
@@ -834,11 +858,10 @@ const EmployerCompanyProfilePage = () => {
                               name="latitude"
                               value={formData.latitude}
                               onChange={handleChange}
-                              placeholder="Melbourne"
+                              placeholder="12.9716"
                             />
                           </div>
 
-                          {/* Longitude */}
                           <div className="form-group col-lg-3 col-md-12">
                             <label>Longitude</label>
                             <input
@@ -846,11 +869,10 @@ const EmployerCompanyProfilePage = () => {
                               name="longitude"
                               value={formData.longitude}
                               onChange={handleChange}
-                              placeholder="Melbourne"
+                              placeholder="77.5946"
                             />
                           </div>
 
-                          {/* Search Location Button */}
                           <div className="form-group col-lg-12 col-md-12">
                             <button
                               className="theme-btn btn-style-three"
@@ -867,8 +889,9 @@ const EmployerCompanyProfilePage = () => {
                               Search Location
                             </button>
                           </div>
+                          */}
 
-                          {/* Map Frame */}
+                          {/* Temporarily commented out non-functional decorative map frame
                           <div className="form-group col-lg-12 col-md-12">
                             <div className="map-outer">
                               <div
@@ -896,6 +919,7 @@ const EmployerCompanyProfilePage = () => {
                               </div>
                             </div>
                           </div>
+                          */}
 
                           {/* Save Button */}
                           <div className="form-group col-lg-12 col-md-12">
@@ -916,7 +940,7 @@ const EmployerCompanyProfilePage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

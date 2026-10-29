@@ -4,6 +4,8 @@ import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
 
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
+
 const initialContacts = [
   { id: 1, name: 'Darlene Robertson', role: 'Head of Development', time: '35 mins', avatar: '/images/resource/candidate-1.png', count: null },
   { id: 2, name: 'Jane Cooper', role: 'Head of Development', time: '35 mins', avatar: '/images/resource/candidate-2.png', count: 2, countClass: '' },
@@ -94,7 +96,14 @@ const CandidateMessagesPage = () => {
     c.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const activeContact = initialContacts.find((c) => c.id === activeContactId) || initialContacts[2];
+  const activeContact =
+    initialContacts.find((c) => c.id === activeContactId) ||
+    initialContacts[0] || {
+      id: 0,
+      name: 'Conversations',
+      role: 'Support / Employer',
+      avatar: '/images/resource/candidate-8.png',
+    };
 
   return (
     <div className="page-wrapper dashboard">
@@ -118,16 +127,19 @@ const CandidateMessagesPage = () => {
                 <i className="la la-user-tie"></i> My Profile
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tab
             <li>
               <Link to="/candidate-dashboard/my-resume">
                 <i className="la la-file-invoice"></i> My Resume
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/applied-jobs">
                 <i className="la la-briefcase"></i> Applied Jobs
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/job-alerts">
                 <i className="la la-bell"></i> Job Alerts
@@ -138,6 +150,7 @@ const CandidateMessagesPage = () => {
                 <i className="la la-bookmark-o"></i> Shortlisted Jobs
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/cv-manager">
                 <i className="la la-file-invoice"></i> CV manager
@@ -148,6 +161,7 @@ const CandidateMessagesPage = () => {
                 <i className="la la-box"></i> Packages
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li className="active">
               <Link to="/candidate-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -158,6 +172,7 @@ const CandidateMessagesPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/my-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -167,9 +182,7 @@ const CandidateMessagesPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
 
@@ -263,13 +276,13 @@ const CandidateMessagesPage = () => {
                           <div className="d-flex bd-highlight">
                             <div className="img_cont">
                               <img
-                                src="/images/resource/candidate-8.png"
-                                alt=""
+                                src={activeContact.avatar}
+                                alt={activeContact.name}
                                 className="rounded-circle user_img"
                               />
                             </div>
                             <div className="user_info">
-                              <span>Arlene McCoy</span>
+                              <span>{activeContact.name}</span>
                               <p>Active</p>
                             </div>
                           </div>
@@ -344,7 +357,7 @@ const CandidateMessagesPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

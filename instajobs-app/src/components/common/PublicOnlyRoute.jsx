@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const PublicOnlyRoute = ({ children }) => {
   const { role, loading, isAuthenticated } = useAuth();
+  const location = useLocation();
 
   // Show loading spinner while AuthContext restores session
   if (loading) {
@@ -39,14 +40,15 @@ const PublicOnlyRoute = ({ children }) => {
         </div>
       );
     }
+    const fromPath = location.state?.from;
     if (role === 'admin') {
-      return <Navigate to="/admin-dashboard" replace />;
+      return <Navigate to={fromPath && fromPath.startsWith('/admin') ? fromPath : '/admin-dashboard'} replace />;
     }
     if (role === 'employer') {
-      return <Navigate to="/employer-dashboard" replace />;
+      return <Navigate to={fromPath && fromPath.startsWith('/employer') ? fromPath : '/employer-dashboard'} replace />;
     }
     if (role === 'candidate') {
-      return <Navigate to="/candidate-dashboard" replace />;
+      return <Navigate to={fromPath && fromPath.startsWith('/candidate') ? fromPath : '/candidate-dashboard'} replace />;
     }
   }
 

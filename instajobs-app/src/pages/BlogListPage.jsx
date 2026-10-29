@@ -1,63 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Header from '../components/common/Header';
-
-const blogsData = [
-  {
-    id: 1,
-    image: '/images/resource/news-1.jpg',
-    date: 'August 31, 2021',
-    comments: '12 Comment',
-    title: 'Attract Sales And Profits',
-    text: 'A job ravenously while Far much that one rank beheld after outside....',
-  },
-  {
-    id: 2,
-    image: '/images/resource/news-2.jpg',
-    date: 'August 31, 2021',
-    comments: '12 Comment',
-    title: '5 Tips For Your Job Interviews',
-    text: 'A job ravenously while Far much that one rank beheld after outside....',
-  },
-  {
-    id: 3,
-    image: '/images/resource/news-3.jpg',
-    date: 'August 31, 2021',
-    comments: '12 Comment',
-    title: 'An Overworked Newspaper Editor',
-    text: 'A job ravenously while Far much that one rank beheld after outside....',
-  },
-  {
-    id: 4,
-    image: '/images/resource/news-4.jpg',
-    date: 'August 31, 2021',
-    comments: '12 Comment',
-    title: 'Attract Sales And Profits',
-    text: 'A job ravenously while Far much that one rank beheld after outside....',
-  },
-  {
-    id: 5,
-    image: '/images/resource/news-5.jpg',
-    date: 'August 31, 2021',
-    comments: '12 Comment',
-    title: '5 Tips For Your Job Interviews',
-    text: 'A job ravenously while Far much that one rank beheld after outside....',
-  },
-  {
-    id: 6,
-    image: '/images/resource/news-6.jpg',
-    date: 'August 31, 2021',
-    comments: '12 Comment',
-    title: 'An Overworked Newspaper Editor',
-    text: 'A job ravenously while Far much that one rank beheld after outside....',
-  },
-];
+import Footer from '../components/common/Footer';
+import { contentService } from '../services/contentService';
+import { formatIndianDate } from '../utils/jobFormatters';
 
 const BlogListPage = () => {
   const location = useLocation();
+  const [blogs, setBlogs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, []);
+
+    const loadBlogs = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await contentService.getBlogs({ page, limit: 9 });
+        setBlogs(data?.blogs || []);
+        setTotal(data?.total || 0);
+        setTotalPages(data?.totalPages || 1);
+      } catch (err) {
+        console.error('Error fetching blogs:', err);
+        setError(err.message || 'Unable to load blog articles at this time.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadBlogs();
+  }, [page]);
 
   return (
     <div className="page-wrapper">
@@ -68,7 +45,7 @@ const BlogListPage = () => {
       <section className="page-title">
         <div className="auto-container">
           <div className="title-outer">
-            <h1>Blog</h1>
+            <h1>Blog & Articles</h1>
             <ul className="page-breadcrumb">
               <li>
                 <Link to="/">Home</Link>
@@ -87,65 +64,148 @@ const BlogListPage = () => {
             {/* Content Side */}
             <div className="content-side col-lg-12 col-md-12 col-sm-12">
               <div className="blog-grid">
-                <div className="row">
-                  {blogsData.map((blog) => (
-                    <div key={blog.id} className="news-block col-lg-4 col-md-6 col-sm-12">
-                      <div className="inner-box">
-                        <div className="image-box">
-                          <figure className="image">
-                            <Link to={`/blogs/${blog.id}`}>
-                              <img src={blog.image} alt="" />
-                            </Link>
-                          </figure>
-                        </div>
-                        <div className="lower-content">
-                          <ul className="post-meta">
-                            <li>
-                              <a href="#">{blog.date}</a>
-                            </li>
-                            <li>
-                              <a href="#">{blog.comments}</a>
-                            </li>
-                          </ul>
-                          <h3>
-                            <Link to={`/blogs/${blog.id}`}>{blog.title}</Link>
-                          </h3>
-                          <p className="text">{blog.text}</p>
-                          <Link to={`/blogs/${blog.id}`} className="read-more">
-                            Read More <i className="fa fa-angle-right"></i>
-                          </Link>
-                        </div>
-                      </div>
+                {loading ? (
+                  <div className="text-center py-5 my-5">
+                    <div className="spinner-border text-primary" role="status">
+                      <span className="sr-only">Loading articles...</span>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-muted mt-3 small">Loading latest articles and platform updates...</p>
+                  </div>
+                ) : error ? (
+                  <div className="alert alert-danger my-5 text-center" role="alert">
+                    <i className="la la-exclamation-circle mr-2"></i>
+                    {error}
+                  </div>
+                ) : blogs.length === 0 ? (
+                  <div className="text-center py-5 my-5">
+                    <div
+                      style={{
+                        width: '70px',
+                        height: '70px',
+                        borderRadius: '50%',
+                        backgroundColor: '#e8f0fe',
+                        color: '#1967d2',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '32px',
+                        marginBottom: '16px'
+                      }}
+                    >
+                      <i className="la la-newspaper-o"></i>
+                    </div>
+                    <h4 className="font-weight-bold mb-2">No Articles Published Yet</h4>
+                    <p className="text-muted small mb-4" style={{ maxWidth: '460px', margin: '0 auto' }}>
+                      Insights, gig industry guides, and hiring resources will be published here soon. Stay tuned!
+                    </p>
+                    <Link to="/jobs" className="theme-btn btn-style-one">
+                      Browse Active Gigs
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    <div className="row">
+                      {blogs.map((blog) => {
+                        const blogLink = `/blogs/${blog.slug || blog.id}`;
+                        const postDate = blog.published_at || blog.created_at;
 
-                {/* Pagination */}
-                <nav className="ls-pagination">
-                  <ul>
-                    <li className="prev">
-                      <a href="#">
-                        <i className="fa fa-arrow-left"></i>
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#">1</a>
-                    </li>
-                    <li>
-                      <a href="#" className="current-page">
-                        2
-                      </a>
-                    </li>
-                    <li>
-                      <a href="#">3</a>
-                    </li>
-                    <li className="next">
-                      <a href="#">
-                        <i className="fa fa-arrow-right"></i>
-                      </a>
-                    </li>
-                  </ul>
-                </nav>
+                        return (
+                          <div key={blog.id} className="news-block col-lg-4 col-md-6 col-sm-12">
+                            <div className="inner-box">
+                              {blog.featured_image && (
+                                <div className="image-box">
+                                  <figure className="image">
+                                    <Link to={blogLink}>
+                                      <img
+                                        src={blog.featured_image}
+                                        alt={blog.title}
+                                        style={{ height: '220px', width: '100%', objectFit: 'cover' }}
+                                      />
+                                    </Link>
+                                  </figure>
+                                </div>
+                              )}
+                              <div className="lower-content">
+                                <ul className="post-meta">
+                                  {postDate && (
+                                    <li>
+                                      <span className="text-muted">{formatIndianDate(postDate)}</span>
+                                    </li>
+                                  )}
+                                  {blog.author_name && (
+                                    <li>
+                                      <span className="text-muted">By {blog.author_name}</span>
+                                    </li>
+                                  )}
+                                  {blog.category && (
+                                    <li>
+                                      <span className="badge bg-light text-primary border">{blog.category}</span>
+                                    </li>
+                                  )}
+                                </ul>
+                                <h3>
+                                  <Link to={blogLink}>{blog.title}</Link>
+                                </h3>
+                                {blog.excerpt && <p className="text">{blog.excerpt}</p>}
+                                <Link to={blogLink} className="read-more">
+                                  Read More <i className="fa fa-angle-right"></i>
+                                </Link>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination (rendered if multiple pages exist) */}
+                    {totalPages > 1 && (
+                      <nav className="ls-pagination">
+                        <ul>
+                          {page > 1 && (
+                            <li className="prev">
+                              <a
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPage((p) => Math.max(p - 1, 1));
+                                }}
+                              >
+                                <i className="fa fa-arrow-left"></i>
+                              </a>
+                            </li>
+                          )}
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((pNum) => (
+                            <li key={pNum}>
+                              <a
+                                href="#"
+                                className={pNum === page ? 'current-page' : ''}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPage(pNum);
+                                }}
+                              >
+                                {pNum}
+                              </a>
+                            </li>
+                          ))}
+                          {page < totalPages && (
+                            <li className="next">
+                              <a
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPage((p) => Math.min(p + 1, totalPages));
+                                }}
+                              >
+                                <i className="fa fa-arrow-right"></i>
+                              </a>
+                            </li>
+                          )}
+                        </ul>
+                      </nav>
+                    )}
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -153,160 +213,8 @@ const BlogListPage = () => {
       </div>
       {/* End Sidebar Page Container */}
 
-      {/* Main Footer alternate5 */}
-      <footer className="main-footer alternate5">
-        <div className="auto-container">
-          <div className="widgets-section">
-            <div className="row">
-              <div className="big-column col-xl-4 col-lg-3 col-md-12">
-                <div className="footer-column about-widget">
-                  <div className="logo">
-                    <Link to="/">
-                      <img src="/images/logo.svg" alt="" />
-                    </Link>
-                  </div>
-                  <p className="phone-num">
-                    <span>Call us </span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </p>
-                  <p className="address">
-                    329 Queensberry Street, North Melbourne VIC
-                    <br /> 3051, Australia. <br />
-                    <a href="mailto:support@superio.com" className="email">
-                      support@superio.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="big-column col-xl-8 col-lg-9 col-md-12">
-                <div className="row">
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Candidates</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/jobs">Browse Jobs</Link>
-                          </li>
-                          <li>
-                            <Link to="/jobs">Browse Categories</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard">Candidate Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/job-alerts">Job Alerts</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/shortlisted-jobs">My Bookmarks</Link>
-                          </li>
-                          <li>
-                            <Link to="/pricing">Job Packages</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Employers</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Browse Candidates</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard">Employer Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard/post-job">Add Job</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">About Us</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/about">About Us</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/blogs">Blog</Link>
-                          </li>
-                          <li>
-                            <Link to="/contact">Contact</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">Helpful Resources</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Site Map</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms of Use</Link>
-                          </li>
-                          <li>
-                            <Link to={location.pathname} onClick={(e) => e.preventDefault()}>Privacy Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Security Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Accessibility Center</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <div className="auto-container">
-            <div className="outer-box">
-              <div className="copyright-text">
-                © 2021 <Link to="/">Superio</Link>. All Right Reserved.
-              </div>
-              <div className="social-links">
-                <a href="#">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Main Footer */}
+      <Footer />
     </div>
   );
 };

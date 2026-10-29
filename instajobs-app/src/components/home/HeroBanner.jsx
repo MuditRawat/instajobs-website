@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import { jobService } from '../../services/jobService';
 import {
   formatLocation,
@@ -9,6 +10,7 @@ import {
 
 const HeroBanner = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, role } = useAuth();
   const [keyword, setKeyword] = useState('');
   const [location, setLocation] = useState('');
   const [sideJobs, setSideJobs] = useState([]);
@@ -26,6 +28,19 @@ const HeroBanner = () => {
     fetchSideJobs();
   }, []);
 
+  const handleUploadCvClick = (e) => {
+    e.preventDefault();
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: '/candidate-dashboard/cv-manager' } });
+      return;
+    }
+    if (role === 'candidate') {
+      navigate('/candidate-dashboard/cv-manager');
+      return;
+    }
+    // For logged-in employers (or non-candidate roles), do nothing
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const params = new URLSearchParams();
@@ -41,15 +56,15 @@ const HeroBanner = () => {
           <div className="content-column col-lg-7">
             <div className="inner-column">
               <div className="title-box wow fadeInUp">
-                <h3>We find the best jobs for you</h3>
-                <div className="text">Search your career opportunity through active listings</div>
+                <h3>Find Gig Jobs & Flexible Work in India</h3>
+                <div className="text">Discover on-demand shifts, daily gigs, freelance tasks, and local work near you</div>
               </div>
               {/* Job Search Form */}
               <div className="job-search-form-two wow fadeInUp" data-wow-delay="200ms">
                 <form onSubmit={handleSubmit}>
                   <div className="row">
                     <div className="form-group col-lg-5 col-md-12 col-sm-12">
-                      <label className="title">What</label>
+                      <label className="title">What Work</label>
                       <span className="icon flaticon-search-1"></span>
                       <input
                         type="text"
@@ -74,7 +89,7 @@ const HeroBanner = () => {
                     {/* Form Group */}
                     <div className="form-group col-lg-3 col-md-12 col-sm-12 btn-box">
                       <button type="submit" className="theme-btn btn-style-one">
-                        <span className="btn-title">Find Jobs</span>
+                        <span className="btn-title">Find Gigs</span>
                       </button>
                     </div>
                   </div>
@@ -83,25 +98,29 @@ const HeroBanner = () => {
               {/* Job Search Form */}
               {/* Popular Search */}
               <div className="popular-searches at-home18 mb-5 wow fadeInUp" data-wow-delay="400ms">
-                <span className="title">Popular Searches : </span>
-                <Link className="dark-color" to="/jobs?keyword=Designer">Designer</Link>,{' '}
-                <Link className="dark-color" to="/jobs?keyword=Developer">Developer</Link>,{' '}
-                <Link className="dark-color" to="/jobs?keyword=Web">Web</Link>,{' '}
-                <Link className="dark-color" to="/jobs?keyword=IOS">IOS</Link>,{' '}
-                <Link className="dark-color" to="/jobs?keyword=PHP">PHP</Link>,{' '}
-                <Link className="dark-color" to="/jobs?keyword=Senior">Senior</Link>,{' '}
-                <Link className="dark-color" to="/jobs?keyword=Engineer">Engineer</Link>
+                <span className="title">Trending Work : </span>
+                <Link className="dark-color" to="/jobs?category=Delivery%2C%20Logistics%20%26%20Courier">Delivery</Link>,{' '}
+                <Link className="dark-color" to="/jobs?category=Drivers%20%26%20Transport">Driver</Link>,{' '}
+                <Link className="dark-color" to="/jobs?category=Retail%2C%20Warehouse%20%26%20Packing">Warehouse</Link>,{' '}
+                <Link className="dark-color" to="/jobs?category=Technicians%2C%20Electricians%20%26%20Repair">Electrician</Link>,{' '}
+                <Link className="dark-color" to="/jobs?category=Restaurant%2C%20Hospitality%20%26%20Catering">Kitchen</Link>,{' '}
+                <Link className="dark-color" to="/jobs?category=Housekeeping%2C%20Cleaning%20%26%20Domestic%20Help">Cleaning</Link>,{' '}
+                <Link className="dark-color" to="/jobs?category=Digital%20Freelance%2C%20Design%20%26%20Online%20Tasks">Freelance</Link>
               </div>
               {/* End Popular Search */}
               {/* Candidate Section */}
               <div className="bottom-box d-flex align-items-center justify-content-between wow fadeInUp" data-wow-delay="1500ms">
                 <div className="count-employers d-flex align-items-center">
-                  <span className="title mr20 fz16 fw500">10k+ Candidates</span>
-                  <img src="/images/resource/multi-peoples.png" alt="" />
+                  <span className="title mr20 fz16 fw500">Verified Gig Workers</span>
+                  <img src="/images/resource/multi-peoples.png" alt="India Gig Workers" />
                 </div>
-                <Link to="/candidate-dashboard/my-resume" className="upload-cv dark-color fz16 fw500">
-                  <span className="icon flaticon-file"></span> Upload your CV
-                </Link>
+                <a
+                  href="/candidate-dashboard/cv-manager"
+                  onClick={handleUploadCvClick}
+                  className="upload-cv dark-color fz16 fw500"
+                >
+                  <span className="icon flaticon-file"></span> Upload Profile / CV
+                </a>
               </div>
               {/* End Candidate Section */}
             </div>
@@ -136,9 +155,11 @@ const HeroBanner = () => {
                           {job.category && <li className="required">{job.category}</li>}
                           {job.job_type && <li className="time">{job.job_type}</li>}
                         </ul>
+                        {/* Save / bookmark button hidden on hero showcase cards as requested
                         <button className="bookmark-btn">
                           <span className="flaticon-bookmark"></span>
                         </button>
+                        */}
                       </div>
                     </div>
                   </div>
@@ -167,9 +188,11 @@ const HeroBanner = () => {
                         <li className="required">Featured</li>
                         <li className="time">Full Time</li>
                       </ul>
+                      {/* Save / bookmark button hidden on hero showcase cards as requested
                       <button className="bookmark-btn">
                         <span className="flaticon-bookmark"></span>
                       </button>
+                      */}
                     </div>
                   </div>
                 </div>

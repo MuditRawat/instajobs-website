@@ -1,23 +1,32 @@
-import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
+import Footer from '../components/common/Footer';
+import { contentService } from '../services/contentService';
 
 const TermsPage = () => {
-  const location = useLocation();
+  const [termsData, setTermsData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // Initialize WOW.js for scroll reveal animations matching script.js line 1066
-    if (window.WOW) {
-      const wow = new window.WOW({
-        boxClass: 'wow',
-        animateClass: 'animated',
-        offset: 0,
-        mobile: false,
-        live: true
-      });
-      wow.init();
-    }
+    const loadTerms = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await contentService.getPageContent('terms');
+        setTermsData(data);
+      } catch (err) {
+        console.error('Error loading terms:', err);
+        setError(err.message || 'Failed to load Terms & Conditions.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTerms();
   }, []);
 
   return (
@@ -25,231 +34,92 @@ const TermsPage = () => {
       <span className="header-span"></span>
       <Header />
 
-      {/* TNC Section matching superio-html/terms.html line 292 */}
-      <section className="tnc-section">
+      {/* Page Title */}
+      <section className="page-title">
         <div className="auto-container">
-          <div className="sec-title text-center">
-            <h2>Terms and Conditions</h2>
-            <div className="text">Home / Terms and Conditions</div>
-          </div>
-
-          <div className="text-box">
-            <h3>1. Terms</h3>
-            <p>
-              Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed et, vel
-              diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed pretium. Aliquam
-              eget posuere sit enim elementum nulla vulputate magna. Morbi sed arcu proin quis tortor
-              non risus.{' '}
-            </p>
-            <p>
-              Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus. Nisl malesuada
-              tortor, ligula aliquet felis vitae enim. Mi augue aliquet mauris non elementum tincidunt
-              eget facilisi. Pellentesque massa ipsum tempus vel aliquam massa eu pulvinar eget.{' '}
-            </p>
-          </div>
-
-          <div className="text-box">
-            <h3>2. Limitations</h3>
-            <p>
-              Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed et, vel
-              diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed pretium. Aliquam
-              eget posuere sit enim elementum nulla vulputate magna. Morbi sed arcu proin quis tortor
-              non risus.{' '}
-            </p>
-            <p>
-              Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus. Nisl malesuada
-              tortor, ligula aliquet felis vitae enim. Mi augue aliquet mauris non elementum tincidunt
-              eget facilisi. Pellentesque massa ipsum tempus vel aliquam massa eu pulvinar eget.{' '}
-            </p>
-          </div>
-
-          <div className="text-box">
-            <h3>3. Revisions and Errata</h3>
-            <p>
-              Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed et, vel
-              diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed pretium. Aliquam
-              eget posuere sit enim elementum nulla vulputate magna. Morbi sed arcu proin quis tortor
-              non risus.{' '}
-            </p>
-            <p>
-              Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus. Nisl malesuada
-              tortor, ligula aliquet felis vitae enim. Mi augue aliquet mauris non elementum tincidunt
-              eget facilisi. Pellentesque massa ipsum tempus vel aliquam massa eu pulvinar eget.{' '}
-            </p>
-          </div>
-
-          <div className="text-box">
-            <h3>4. Site Terms of Use Modifications</h3>
-            <p>
-              Pharetra nulla ullamcorper sit lectus. Fermentum mauris pellentesque nec nibh sed et, vel
-              diam, massa. Placerat quis vel fames interdum urna lobortis sagittis sed pretium. Aliquam
-              eget posuere sit enim elementum nulla vulputate magna. Morbi sed arcu proin quis tortor
-              non risus.{' '}
-            </p>
-            <p>
-              Elementum lectus a porta commodo suspendisse arcu, aliquam lectus faucibus. Nisl malesuada
-              tortor, ligula aliquet felis vitae enim. Mi augue aliquet mauris non elementum tincidunt
-              eget facilisi. Pellentesque massa ipsum tempus vel aliquam massa eu pulvinar eget.{' '}
-            </p>
+          <div className="title-outer">
+            <h1>Terms and Conditions</h1>
+            <ul className="page-breadcrumb">
+              <li>
+                <Link to="/">Home</Link>
+              </li>{' '}
+              <li>Terms and Conditions</li>
+            </ul>
           </div>
         </div>
       </section>
-      {/* End TNC Section */}
 
-      {/* Main Footer alternate5 */}
-      <footer className="main-footer alternate5">
+      {/* TNC Section */}
+      <section className="tnc-section py-5">
         <div className="auto-container">
-          <div className="widgets-section">
-            <div className="row">
-              <div className="big-column col-xl-4 col-lg-3 col-md-12">
-                <div className="footer-column about-widget">
-                  <div className="logo">
-                    <Link to="/">
-                      <img src="/images/logo.svg" alt="" />
-                    </Link>
-                  </div>
-                  <p className="phone-num">
-                    <span>Call us </span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </p>
-                  <p className="address">
-                    329 Queensberry Street, North Melbourne VIC
-                    <br /> 3051, Australia. <br />
-                    <a href="mailto:support@superio.com" className="email">
-                      support@superio.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="big-column col-xl-8 col-lg-9 col-md-12">
-                <div className="row">
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Candidates</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/jobs">Browse Jobs</Link>
-                          </li>
-                          <li>
-                            <Link to="/jobs">Browse Categories</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard">Candidate Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/job-alerts">Job Alerts</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/shortlisted-jobs">My Bookmarks</Link>
-                          </li>
-                          <li>
-                            <Link to="/pricing">Job Packages</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Employers</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Browse Candidates</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard">Employer Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard/post-job">Add Job</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">About Us</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/about">About Us</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/blogs">Blog</Link>
-                          </li>
-                          <li>
-                            <Link to="/contact">Contact</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">Helpful Resources</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Site Map</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms of Use</Link>
-                          </li>
-                          <li>
-                            <Link to={location.pathname} onClick={(e) => e.preventDefault()}>Privacy Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Security Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Accessibility Center</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          <div className="sec-title text-center mb-5">
+            <h2>{termsData?.title || 'Terms and Conditions'}</h2>
+            <div className="text text-muted">
+              Last Updated: {termsData?.last_updated || 'October 2026'} | InstaJobs Platform Terms of Service
             </div>
           </div>
-        </div>
 
-        <div className="footer-bottom">
-          <div className="auto-container">
-            <div className="outer-box">
-              <div className="copyright-text">
-                © 2021 <Link to="/">Superio</Link>. All Right Reserved.
-              </div>
-              <div className="social-links">
-                <a href="#">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
+          {loading ? (
+            <div className="text-center py-5" style={{ minHeight: '40vh' }}>
+              <div className="spinner-border text-primary" role="status">
+                <span className="sr-only">Loading Terms & Conditions...</span>
               </div>
             </div>
-          </div>
+          ) : error && !termsData ? (
+            <div className="alert alert-danger text-center my-5 py-4">
+              <h4>Unable to load Terms and Conditions</h4>
+              <p className="text-muted">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="theme-btn btn-style-one mt-3"
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <div className="content-box bg-white p-4 p-md-5 rounded shadow-sm border">
+              {Array.isArray(termsData?.sections) &&
+                termsData.sections.map((section) => (
+                  <div key={section.id} className="text-box mb-4 pb-3 border-bottom">
+                    <h3 className="font-weight-bold mb-3" style={{ fontSize: '20px', color: '#202124' }}>
+                      {section.title}
+                    </h3>
+                    {Array.isArray(section.content) ? (
+                      section.content.map((p, idx) => (
+                        <p
+                          key={idx}
+                          className="text mb-2"
+                          style={{ fontSize: '15px', lineHeight: '26px', color: '#696969' }}
+                        >
+                          {p}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="text" style={{ fontSize: '15px', lineHeight: '26px', color: '#696969' }}>
+                        {section.content}
+                      </p>
+                    )}
+                  </div>
+                ))}
+
+              {/* Legal Notice Box */}
+              <div className="alert alert-light border mt-4 p-4 rounded">
+                <h5 className="font-weight-bold text-dark mb-2">Legal Confirmation & Updates</h5>
+                <p className="small text-muted mb-0">
+                  These terms reflect the live operational capabilities of the InstaJobs gig marketplace. Specific commercial contracts, shift agreements, and statutory compliance are governed by relevant state and central legislation in India. For questions or formal notices, contact{' '}
+                  <a href="mailto:support@instajobs.in" className="text-primary font-weight-bold">
+                    support@instajobs.in
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </footer>
+      </section>
+
+      {/* Main Footer */}
+      <Footer />
     </div>
   );
 };

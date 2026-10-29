@@ -1,99 +1,77 @@
-import React, { useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
+import Footer from '../components/common/Footer';
+import { contentService } from '../services/contentService';
+import { formatIndianNumber } from '../utils/jobFormatters';
 
 const AboutPage = () => {
-  const location = useLocation();
+  const [content, setContent] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     window.scrollTo(0, 0);
 
-    // Initialize WOW.js for scroll reveal animations matching script.js line 1066
-    if (window.WOW) {
-      const wow = new window.WOW({
-        boxClass: 'wow',
-        animateClass: 'animated',
-        offset: 0,
-        mobile: false,
-        live: true
-      });
-      wow.init();
-    }
-
-    // Initialize Fact Counter + Text Count matching script.js line 862
-    if (window.jQuery) {
-      const $ = window.jQuery;
-
-      if ($('.count-box').length && $.fn.appear) {
-        $('.count-box').appear(function () {
-          var $t = $(this),
-            n = $t.find('.count-text').attr('data-stop'),
-            r = parseInt($t.find('.count-text').attr('data-speed'), 10);
-
-          if (!$t.hasClass('counted')) {
-            $t.addClass('counted');
-            $({
-              countNum: 0
-            }).animate(
-              {
-                countNum: n
-              },
-              {
-                duration: r,
-                easing: 'linear',
-                step: function () {
-                  $t.find('.count-text').text(Math.floor(this.countNum));
-                },
-                complete: function () {
-                  $t.find('.count-text').text(this.countNum);
-                }
-              }
-            );
-          }
-        });
+    const loadContent = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await contentService.getPageContent('about');
+        setContent(data);
+      } catch (err) {
+        console.error('Error loading about page content:', err);
+        setError(err.message || 'Failed to load about page information.');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // Initialize Owl Carousel for testimonial-carousel and sponsors-carousel matching script.js
-      if ($('.testimonial-carousel').length && $.fn.owlCarousel) {
-        $('.testimonial-carousel').owlCarousel({
-          loop: true,
-          margin: 15,
-          items: 1,
-          nav: false,
-          smartSpeed: 500,
-          autoplay: true,
-          autoplayTimeout: 10000,
-          navText: ['<span class="flaticon-back"></span>', '<span class="flaticon-next"></span>']
-        });
-      }
-
-      if ($('.sponsors-carousel').length && $.fn.owlCarousel) {
-        $('.sponsors-carousel').owlCarousel({
-          loop: true,
-          nav: false,
-          smartSpeed: 500,
-          autoplay: true,
-          autoplayTimeout: 10000,
-          navText: ['<span class="flaticon-back"></span>', '<span class="flaticon-next"></span>'],
-          responsive: {
-            0: { items: 1 },
-            480: { items: 2 },
-            600: { items: 3 },
-            768: { items: 4 },
-            1024: { items: 5 },
-            1400: { items: 6 },
-            1800: { items: 7 }
-          }
-        });
-      }
-    }
+    loadContent();
   }, []);
+
+  useEffect(() => {
+    if (!loading && content) {
+      // Initialize WOW.js for scroll reveal animations
+      if (window.WOW) {
+        new window.WOW({
+          boxClass: 'wow',
+          animateClass: 'animated',
+          offset: 0,
+          mobile: false,
+          live: true
+        }).init();
+      }
+
+      // Initialize Owl Carousel for sponsors matching original template
+      if (window.jQuery) {
+        const $ = window.jQuery;
+        if ($('.sponsors-carousel').length && $.fn.owlCarousel) {
+          $('.sponsors-carousel').owlCarousel({
+            loop: true,
+            nav: false,
+            smartSpeed: 500,
+            autoplay: true,
+            autoplayTimeout: 10000,
+            navText: ['<span class="flaticon-back"></span>', '<span class="flaticon-next"></span>'],
+            responsive: {
+              0: { items: 2 },
+              480: { items: 3 },
+              768: { items: 4 },
+              1024: { items: 5 }
+            }
+          });
+        }
+      }
+    }
+  }, [loading, content]);
 
   return (
     <div className="page-wrapper">
       <span className="header-span"></span>
       <Header />
 
-      {/* Page Title matching superio-html/about.html line 292 */}
+      {/* Page Title */}
       <section className="page-title">
         <div className="auto-container">
           <div className="title-outer">
@@ -109,474 +87,178 @@ const AboutPage = () => {
       </section>
       {/* End Page Title */}
 
-      {/* About Section Three matching superio-html/about.html line 306 */}
-      <section className="about-section-three">
-        <div className="auto-container">
-          <div className="images-box">
-            <div className="row">
-              <div className="column col-lg-3 col-md-6 col-sm-6">
-                <figure className="image">
-                  <img src="/images/resource/about-img-1.jpg" alt="" />
-                </figure>
-              </div>
-              <div className="column col-lg-3 col-md-6 col-sm-6">
-                <figure className="image">
-                  <img src="/images/resource/about-img-2.jpg" alt="" />
-                </figure>
-                <figure className="image">
-                  <img src="/images/resource/about-img-3.jpg" alt="" />
-                </figure>
-              </div>
-              <div className="column col-lg-3 col-md-6 col-sm-6">
-                <figure className="image">
-                  <img src="/images/resource/about-img-4.jpg" alt="" />
-                </figure>
-                <figure className="image">
-                  <img src="/images/resource/about-img-5.jpg" alt="" />
-                </figure>
-              </div>
-              <div className="column col-lg-3 col-md-6 col-sm-6">
-                <figure className="image">
-                  <img src="/images/resource/about-img-6.jpg" alt="" />
-                </figure>
-              </div>
-            </div>
-          </div>
-
-          {/* Fun Fact Section matching superio-html/about.html line 327 */}
-          <div className="fun-fact-section">
-            <div className="row">
-              {/* Column 1 */}
-              <div className="counter-column col-lg-4 col-md-4 col-sm-12 wow fadeInUp">
-                <div className="count-box">
-                  <span className="count-text" data-speed="3000" data-stop="4">
-                    0
-                  </span>
-                  M
-                </div>
-                <h4 className="counter-title">4 million daily active users</h4>
-              </div>
-
-              {/* Column 2 */}
-              <div className="counter-column col-lg-4 col-md-4 col-sm-12 wow fadeInUp" data-wow-delay="400ms">
-                <div className="count-box">
-                  <span className="count-text" data-speed="3000" data-stop="12">
-                    0
-                  </span>
-                  k
-                </div>
-                <h4 className="counter-title">Over 12k open job positions</h4>
-              </div>
-
-              {/* Column 3 */}
-              <div className="counter-column col-lg-4 col-md-4 col-sm-12 wow fadeInUp" data-wow-delay="800ms">
-                <div className="count-box">
-                  <span className="count-text" data-speed="3000" data-stop="20">
-                    0
-                  </span>
-                  M
-                </div>
-                <h4 className="counter-title">Over 20 million stories shared</h4>
-              </div>
-            </div>
-          </div>
-          {/* End Fun Fact Section */}
-
-          <div className="text-box">
-            <h4>About Superio</h4>
-            <p>
-              Far much that one rank beheld bluebird after outside ignobly allegedly more when oh
-              arrogantly vehement irresistibly fussy penguin insect additionally wow absolutely crud
-              meretriciously hastily dalmatian a glowered inset one echidna cassowary some parrot
-              and much as goodness some froze the sullen much connected bat wonderfully on
-              instantaneously eel valiantly petted this along across highhandedly much.
-            </p>
-            <p>
-              Repeatedly dreamed alas opossum but dramatically despite expeditiously that jeepers
-              loosely yikes that as or eel underneath kept and slept compactly far purred sure
-              abidingly up above fitting to strident wiped set waywardly far the and pangolin horse
-              approving paid chuckled cassowary oh above a much opposite far much hypnotically more
-              therefore wasp less that hey apart well like while superbly orca and far hence
-              one.Far much that one rank beheld bluebird after outside ignobly allegedly more when
-              oh arrogantly vehement irresistibly fussy.
-            </p>
+      {loading ? (
+        <div className="auto-container text-center py-5" style={{ minHeight: '50vh' }}>
+          <div className="spinner-border text-primary" role="status">
+            <span className="sr-only">Loading About information...</span>
           </div>
         </div>
-      </section>
-      {/* End About Section Three */}
+      ) : error && !content ? (
+        <div className="auto-container py-5 text-center" style={{ minHeight: '50vh' }}>
+          <div className="alert alert-danger my-5">
+            <h4>Unable to Load Content</h4>
+            <p className="text-muted">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="theme-btn btn-style-one mt-3"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* About Section */
+        <section className="about-section-three">
+          <div className="auto-container">
+            <div className="images-box">
+              <div className="row">
+                <div className="column col-lg-3 col-md-6 col-sm-6">
+                  <figure className="image">
+                    <img src="/images/resource/about-img-1.jpg" alt="InstaJobs Team" />
+                  </figure>
+                </div>
+                <div className="column col-lg-3 col-md-6 col-sm-6">
+                  <figure className="image">
+                    <img src="/images/resource/about-img-2.jpg" alt="Flexible Work" />
+                  </figure>
+                  <figure className="image">
+                    <img src="/images/resource/about-img-3.jpg" alt="Indian Gig Workers" />
+                  </figure>
+                </div>
+                <div className="column col-lg-3 col-md-6 col-sm-6">
+                  <figure className="image">
+                    <img src="/images/resource/about-img-4.jpg" alt="Verified Hiring" />
+                  </figure>
+                  <figure className="image">
+                    <img src="/images/resource/about-img-5.jpg" alt="Work Opportunities" />
+                  </figure>
+                </div>
+                <div className="column col-lg-3 col-md-6 col-sm-6">
+                  <figure className="image">
+                    <img src="/images/resource/about-img-6.jpg" alt="Pan-India Platform" />
+                  </figure>
+                </div>
+              </div>
+            </div>
 
-      {/* Call To Action Two matching superio-html/about.html line 360 */}
+            {/* Real Platform Statistics */}
+            <div className="fun-fact-section">
+              <div className="row">
+                <div className="counter-column col-lg-4 col-md-4 col-sm-12 wow fadeInUp">
+                  <div className="count-box">
+                    <span className="count-text" style={{ fontSize: '42px', fontWeight: '700', color: '#1967D2' }}>
+                      {formatIndianNumber(content.live_stats?.active_jobs || 0)}
+                    </span>
+                    +
+                  </div>
+                  <h4 className="counter-title">{content.stats?.active_jobs_label || 'Active Gig Openings'}</h4>
+                </div>
+
+                <div className="counter-column col-lg-4 col-md-4 col-sm-12 wow fadeInUp" data-wow-delay="300ms">
+                  <div className="count-box">
+                    <span className="count-text" style={{ fontSize: '42px', fontWeight: '700', color: '#1967D2' }}>
+                      {formatIndianNumber(content.live_stats?.approved_employers || 0)}
+                    </span>
+                    +
+                  </div>
+                  <h4 className="counter-title">{content.stats?.approved_employers_label || 'Verified Hiring Employers'}</h4>
+                </div>
+
+                <div className="counter-column col-lg-4 col-md-4 col-sm-12 wow fadeInUp" data-wow-delay="600ms">
+                  <div className="count-box">
+                    <span className="count-text" style={{ fontSize: '42px', fontWeight: '700', color: '#1967D2' }}>
+                      {formatIndianNumber(content.live_stats?.registered_candidates || 0)}
+                    </span>
+                    +
+                  </div>
+                  <h4 className="counter-title">{content.stats?.registered_candidates_label || 'Registered Gig Professionals'}</h4>
+                </div>
+              </div>
+            </div>
+
+            {/* Real Platform Overview & Mission */}
+            <div className="text-box">
+              <span className="text-primary font-weight-bold">{content.tagline}</span>
+              <h3 className="mt-2 mb-3">{content.title || 'About InstaJobs'}</h3>
+
+              {Array.isArray(content.story) &&
+                content.story.map((paragraph, idx) => (
+                  <p key={idx} className="text" style={{ fontSize: '16px', lineHeight: '28px' }}>
+                    {paragraph}
+                  </p>
+                ))}
+
+              {content.mission && (
+                <div className="p-4 my-4 bg-light rounded" style={{ borderLeft: '4px solid #1967D2' }}>
+                  <h5 className="font-weight-bold text-dark mb-2">Our Mission</h5>
+                  <p className="mb-0 text-muted" style={{ fontSize: '15px', lineHeight: '26px' }}>
+                    {content.mission}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Core Pillars / Values */}
+            {Array.isArray(content.core_values) && content.core_values.length > 0 && (
+              <div className="row mt-5">
+                {content.core_values.map((val, idx) => (
+                  <div key={idx} className="col-lg-6 col-md-6 col-sm-12 mb-4">
+                    <div className="p-4 border rounded h-100 bg-white shadow-sm">
+                      <div className="d-flex align-items-center mb-3">
+                        <span
+                          className="mr-3 d-inline-flex align-items-center justify-content-center text-primary"
+                          style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: 'rgba(25, 103, 210, 0.1)',
+                            borderRadius: '50%',
+                            fontSize: '18px',
+                            fontWeight: 'bold',
+                            flexShrink: 0
+                          }}
+                        >
+                          {idx + 1}
+                        </span>
+                        <h5 className="mb-0 font-weight-bold">{val.title}</h5>
+                      </div>
+                      <p className="text-muted mb-0" style={{ fontSize: '14px', lineHeight: '24px' }}>
+                        {val.description}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Call To Action */}
       <section
         className="call-to-action-two"
         style={{ backgroundImage: 'url(/images/background/1.jpg)' }}
       >
         <div className="auto-container">
           <div className="sec-title light text-center">
-            <h2>Your Dream Jobs Are Waiting</h2>
+            <h2>Find Flexible Gigs or Hire Top Talent</h2>
             <div className="text">
-              Over 1 million interactions, 50,000 success stories Make yours now.
+              Join thousands of gig professionals and verified businesses across India on InstaJobs.
             </div>
           </div>
 
           <div className="btn-box">
             <Link to="/jobs" className="theme-btn btn-style-three">
-              Search Job
+              Browse Gig Jobs
             </Link>
-            <Link to="/jobs" className="theme-btn btn-style-two">
-              Apply Job Now
+            <Link to="/register" className="theme-btn btn-style-two">
+              Get Started Now
             </Link>
           </div>
         </div>
       </section>
-      {/* End Call To Action */}
 
-      {/* Testimonial Section Two matching superio-html/about.html line 377 */}
-      <section className="testimonial-section-two">
-        <div className="container-fluid">
-          <div className="testimonial-left">
-            <img src="/images/resource/testimonial-left.png" alt="" />
-          </div>
-          <div className="testimonial-right">
-            <img src="/images/resource/testimonial-right.png" alt="" />
-          </div>
-
-          <div className="sec-title text-center">
-            <h2>Testimonials From Our Customers</h2>
-            <div className="text">Lorem ipsum dolor sit amet elit, sed do eiusmod tempor</div>
-          </div>
-
-          <div className="carousel-outer">
-            <div className="testimonial-carousel owl-carousel owl-theme">
-              {/* Testimonial Block 1 */}
-              <div className="testimonial-block-two">
-                <div className="inner-box">
-                  <div className="thumb">
-                    <img src="/images/resource/testi-thumb-1.png" alt="" />
-                  </div>
-                  <h4 className="title">Great quality!</h4>
-                  <div className="text">
-                    Without JobHunt i’d be homeless, they found me a job and got me sorted out
-                    quickly with everything! Can’t quite… The Mitech team works really hard to
-                    ensure high level of quality
-                  </div>
-                  <div className="info-box">
-                    <h4 className="name">Brooklyn Simmons</h4>
-                    <span className="designation">Web Developer</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Testimonial Block 2 */}
-              <div className="testimonial-block-two">
-                <div className="inner-box">
-                  <div className="thumb">
-                    <img src="/images/resource/testi-thumb-1.png" alt="" />
-                  </div>
-                  <h4 className="title">Great quality!</h4>
-                  <div className="text">
-                    Without JobHunt i’d be homeless, they found me a job and got me sorted out
-                    quickly with everything! Can’t quite… The Mitech team works really hard to
-                    ensure high level of quality
-                  </div>
-                  <div className="info-box">
-                    <h4 className="name">Brooklyn Simmons</h4>
-                    <span className="designation">Web Developer</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Testimonial Block 3 */}
-              <div className="testimonial-block-two">
-                <div className="inner-box">
-                  <div className="thumb">
-                    <img src="/images/resource/testi-thumb-1.png" alt="" />
-                  </div>
-                  <h4 className="title">Great quality!</h4>
-                  <div className="text">
-                    Without JobHunt i’d be homeless, they found me a job and got me sorted out
-                    quickly with everything! Can’t quite… The Mitech team works really hard to
-                    ensure high level of quality
-                  </div>
-                  <div className="info-box">
-                    <h4 className="name">Brooklyn Simmons</h4>
-                    <span className="designation">Web Developer</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* End Testimonial Section */}
-
-      {/* Work Section matching superio-html/about.html line 436 */}
-      <section className="work-section style-two">
-        <div className="auto-container">
-          <div className="sec-title text-center">
-            <h2>How It Works?</h2>
-            <div className="text">Job for anyone, anywhere</div>
-          </div>
-
-          <div className="row">
-            {/* Work Block 1 */}
-            <div className="work-block col-lg-4 col-md-6 col-sm-12">
-              <div className="inner-box">
-                <figure className="image">
-                  <img src="/images/resource/work-1.png" alt="" />
-                </figure>
-                <h5>Free Resume Assessments</h5>
-                <p>
-                  Employers on average spend 31 seconds scanning resumes to identify potential
-                  matches.
-                </p>
-              </div>
-            </div>
-
-            {/* Work Block 2 */}
-            <div className="work-block col-lg-4 col-md-6 col-sm-12">
-              <div className="inner-box">
-                <figure className="image">
-                  <img src="/images/resource/work-2.png" alt="" />
-                </figure>
-                <h5>Job Fit Scoring</h5>
-                <p>
-                  Employers on average spend 31 seconds scanning resumes to identify potential
-                  matches.
-                </p>
-              </div>
-            </div>
-
-            {/* Work Block 3 */}
-            <div className="work-block col-lg-4 col-md-6 col-sm-12">
-              <div className="inner-box">
-                <figure className="image">
-                  <img src="/images/resource/work-3.png" alt="" />
-                </figure>
-                <h5>Help Every Step of the Way</h5>
-                <p>
-                  Employers on average spend 31 seconds scanning resumes to identify potential
-                  matches.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-      {/* End Work Section */}
-
-      {/* Clients Section matching superio-html/about.html line 477 */}
-      <section className="clients-section">
-        <div className="sponsors-outer">
-          <ul className="sponsors-carousel owl-carousel owl-theme">
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-1.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-2.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-3.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-4.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-5.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-6.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-            <li className="slide-item">
-              <figure className="image-box">
-                <Link to="#">
-                  <img src="/images/clients/1-7.png" alt="" />
-                </Link>
-              </figure>
-            </li>
-          </ul>
-        </div>
-      </section>
-      {/* End Clients Section */}
-
-      {/* Main Footer alternate5 matching superio-html/about.html line 508 */}
-      {/* Main Footer alternate5 */}
-      <footer className="main-footer alternate5">
-        <div className="auto-container">
-          <div className="widgets-section">
-            <div className="row">
-              <div className="big-column col-xl-4 col-lg-3 col-md-12">
-                <div className="footer-column about-widget">
-                  <div className="logo">
-                    <Link to="/">
-                      <img src="/images/logo.svg" alt="" />
-                    </Link>
-                  </div>
-                  <p className="phone-num">
-                    <span>Call us </span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </p>
-                  <p className="address">
-                    329 Queensberry Street, North Melbourne VIC
-                    <br /> 3051, Australia. <br />
-                    <a href="mailto:support@superio.com" className="email">
-                      support@superio.com
-                    </a>
-                  </p>
-                </div>
-              </div>
-
-              <div className="big-column col-xl-8 col-lg-9 col-md-12">
-                <div className="row">
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Candidates</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/jobs">Browse Jobs</Link>
-                          </li>
-                          <li>
-                            <Link to="/jobs">Browse Categories</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard">Candidate Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/job-alerts">Job Alerts</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/shortlisted-jobs">My Bookmarks</Link>
-                          </li>
-                          <li>
-                            <Link to="/pricing">Job Packages</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">For Employers</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Browse Candidates</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard">Employer Dashboard</Link>
-                          </li>
-                          <li>
-                            <Link to="/employer-dashboard/post-job">Add Job</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">About Us</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="/about">About Us</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/candidate-dashboard/my-resume">Resume Page</Link>
-                          </li>
-                          <li>
-                            <Link to="/blogs">Blog</Link>
-                          </li>
-                          <li>
-                            <Link to="/contact">Contact</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="footer-column col-lg-3 col-md-6 col-sm-12">
-                    <div className="footer-widget links-widget">
-                      <h4 className="widget-title">Helpful Resources</h4>
-                      <div className="widget-content">
-                        <ul className="list">
-                          <li>
-                            <Link to="#">Site Map</Link>
-                          </li>
-                          <li>
-                            <Link to="/terms">Terms of Use</Link>
-                          </li>
-                          <li>
-                            <Link to={location.pathname} onClick={(e) => e.preventDefault()}>Privacy Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Security Center</Link>
-                          </li>
-                          <li>
-                            <Link to="#">Accessibility Center</Link>
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="footer-bottom">
-          <div className="auto-container">
-            <div className="outer-box">
-              <div className="copyright-text">
-                © 2021 <Link to="/">Superio</Link>. All Right Reserved.
-              </div>
-              <div className="social-links">
-                <a href="#">
-                  <i className="fab fa-facebook-f"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-twitter"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-instagram"></i>
-                </a>
-                <a href="#">
-                  <i className="fab fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* Main Footer */}
+      <Footer />
     </div>
   );
 };

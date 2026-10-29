@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
 
 const CandidateChangePasswordPage = () => {
@@ -67,16 +68,19 @@ const CandidateChangePasswordPage = () => {
                 <i className="la la-user-tie"></i> My Profile
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tab
             <li>
               <Link to="/candidate-dashboard/my-resume">
                 <i className="la la-file-invoice"></i> My Resume
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/applied-jobs">
                 <i className="la la-briefcase"></i> Applied Jobs
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/job-alerts">
                 <i className="la la-bell"></i> Job Alerts
@@ -87,6 +91,7 @@ const CandidateChangePasswordPage = () => {
                 <i className="la la-bookmark-o"></i> Shortlisted Jobs
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/cv-manager">
                 <i className="la la-file-invoice"></i> CV manager
@@ -97,6 +102,7 @@ const CandidateChangePasswordPage = () => {
                 <i className="la la-box"></i> Packages
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -107,6 +113,7 @@ const CandidateChangePasswordPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/my-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -116,9 +123,7 @@ const CandidateChangePasswordPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
 
@@ -205,7 +210,7 @@ const CandidateChangePasswordPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ const authRoutes = require('./routes/authRoutes');
 const candidateRoutes = require('./routes/candidateRoutes');
 const employerRoutes = require('./routes/employerRoutes');
 const jobRoutes = require('./routes/jobRoutes');
+const publicEmployerRoutes = require('./routes/publicEmployerRoutes');
+const contentRoutes = require('./routes/contentRoutes');
 const authxRoutes = require('./routes/authxRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
@@ -29,6 +31,12 @@ app.get('/api/health', (req, res) => {
 
 // Public Job Discovery Routes
 app.use('/api/jobs', jobRoutes);
+
+// Public Employer Discovery Routes
+app.use('/api/employers', publicEmployerRoutes);
+
+// Public Dynamic Content & FAQ Routes
+app.use('/api/content', contentRoutes);
 
 // Authentication & Registration Routes
 app.use('/api/auth', authRoutes);

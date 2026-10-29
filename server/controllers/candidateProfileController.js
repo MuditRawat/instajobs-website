@@ -521,11 +521,518 @@ const deleteProfile = async (req, res) => {
   }
 };
 
+/**
+ * Controller: Get Candidate KYC Status
+ * GET /api/candidate/kyc
+ */
+const getKycStatus = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'candidate') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only candidate accounts can access candidate KYC status.'
+      });
+    }
+
+    const profile = await CandidateProfileService.getCandidateProfile(userId);
+    if (!profile || !profile.id) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Candidate profile record not found.'
+      });
+    }
+
+    const { data: kyc, error } = await supabase
+      .from('candidate_kyc')
+      .select('id, candidate_id, legal_full_name, phone, email, address, live_latitude, live_longitude, geo_captured_at, consent_timestamp, status, created_at, updated_at')
+      .eq('candidate_id', profile.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('[getKycStatus DB Error]', error);
+      // If table is missing from schema cache, report clear actionable status rather than crashing
+      if (error.code === 'PGRST205' || error.message?.includes('schema cache')) {
+        return res.status(200).json({
+          success: true,
+          hasKyc: false,
+          kyc: null,
+          schemaPending: true,
+          notice: 'Database migration 004_minimal_kyc_and_interview_demo.sql is pending execution in Supabase.'
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        error: 'Internal Server Error',
+        message: `Failed to retrieve candidate KYC information: ${error.message}`
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      hasKyc: !!kyc,
+      kyc: kyc || null
+    });
+  } catch (error) {
+    console.error('[getKycStatus Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve KYC status.'
+    });
+  }
+};
+
+/**
+ * Controller: Submit Reusable Candidate KYC
+ * POST /api/candidate/kyc
+ */
+const submitKyc = async (req, res) => {
+  const inFlightPaths = [];
+  try {
+    const userId = req.user?.id;
+    const role = req.user?.role;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (role !== 'candidate') {
+      return res.status(403).json({
+        success: false,
+        error: 'Forbidden',
+        message: 'Only candidate accounts can submit candidate KYC.'
+      });
+    }
+
+    const profile = await CandidateProfileService.getCandidateProfile(userId);
+    if (!profile || !profile.id) {
+      return res.status(404).json({
+        success: false,
+        error: 'Not Found',
+        message: 'Candidate profile record not found.'
+      });
+    }
+
+    const candidateId = profile.id;
+
+    // 1. KYC REUSE CHECK: If candidate already has a committed KYC record, return it immediately without uploading
+    const { data: existingKyc, error: checkKycErr } = await supabase
+      .from('candidate_kyc')
+      .select('id, candidate_id, legal_full_name, phone, email, address, live_latitude, live_longitude, geo_captured_at, consent_timestamp, status, created_at, updated_at')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    if (checkKycErr) {
+      console.error('[submitKyc Existing KYC Check Error]', checkKycErr);
+      if (checkKycErr.code === 'PGRST205' || checkKycErr.message?.includes('schema cache')) {
+        return res.status(503).json({
+          success: false,
+          error: 'Service Unavailable',
+          code: 'DATABASE_MIGRATION_REQUIRED',
+          message: 'The candidate_kyc table is not initialized in the database. Please execute migration 004_minimal_kyc_and_interview_demo.sql in Supabase SQL editor.'
+        });
+      }
+      return res.status(500).json({
+        success: false,
+        error: 'Internal Server Error',
+        message: `Failed to verify existing candidate KYC records: ${checkKycErr.message}`
+      });
+    }
+
+    if (existingKyc) {
+      return res.status(200).json({
+        success: true,
+        message: 'KYC record already exists and is reusable.',
+        reused: true,
+        kyc: existingKyc
+      });
+    }
+
+    const {
+      legal_full_name,
+      phone,
+      email,
+      address,
+      latitude,
+      longitude,
+      consent_given,
+      selfie_base64,
+      aadhaar_base64
+    } = req.body || {};
+
+    if (consent_given !== true) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Explicit affirmative consent is required to submit KYC.'
+      });
+    }
+
+    const numLat = Number(latitude);
+    const numLng = Number(longitude);
+    if (
+      isNaN(numLat) || isNaN(numLng) ||
+      numLat < -90 || numLat > 90 ||
+      numLng < -180 || numLng > 180
+    ) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Valid live location coordinates (latitude and longitude) are required.'
+      });
+    }
+
+    if (!legal_full_name || typeof legal_full_name !== 'string' || !legal_full_name.trim()) {
+      return res.status(400).json({ success: false, error: 'Bad Request', message: 'Legal full name is required.' });
+    }
+    if (!phone || typeof phone !== 'string' || !phone.trim()) {
+      return res.status(400).json({ success: false, error: 'Bad Request', message: 'Valid contact phone number is required.' });
+    }
+    if (!email || typeof email !== 'string' || !email.includes('@')) {
+      return res.status(400).json({ success: false, error: 'Bad Request', message: 'Valid contact email address is required.' });
+    }
+    if (!address || typeof address !== 'string' || !address.trim()) {
+      return res.status(400).json({ success: false, error: 'Bad Request', message: 'Residential address is required.' });
+    }
+
+    // Server-side file validation (magic bytes, size, base64 encoding)
+    // Limits aligned with 10MB Express body limit:
+    // Selfie max 2MB (decodes to ~2.67MB base64) + Mock Aadhaar max 4MB (decodes to ~5.33MB base64) = ~8.0MB total base64 payload.
+    const { validateBase64File } = require('../utils/fileValidation');
+    const crypto = require('crypto');
+
+    const selfie = validateBase64File(selfie_base64, ['image/jpeg', 'image/png'], 2 * 1024 * 1024, 'Selfie photo');
+    const aadhaar = validateBase64File(aadhaar_base64, ['image/jpeg', 'image/png', 'application/pdf'], 4 * 1024 * 1024, 'Aadhaar document');
+
+    // Fetch prior KYC paths for safe replacement cleanup after commit
+    const { data: priorKyc } = await supabase
+      .from('candidate_kyc')
+      .select('selfie_storage_path, aadhaar_storage_path')
+      .eq('candidate_id', candidateId)
+      .maybeSingle();
+
+    const selfiePath = `candidate-kyc/${candidateId}/selfie_${crypto.randomUUID()}.${selfie.ext}`;
+    const aadhaarPath = `candidate-kyc/${candidateId}/aadhaar_${crypto.randomUUID()}.${aadhaar.ext}`;
+    inFlightPaths.push(selfiePath, aadhaarPath);
+
+    // Upload to private bucket applicant-documents
+    const { error: selfieUpErr } = await supabase.storage
+      .from('applicant-documents')
+      .upload(selfiePath, selfie.buffer, { contentType: selfie.mime, upsert: false });
+
+    if (selfieUpErr) {
+      console.error('[submitKyc Selfie Upload Error]', selfieUpErr);
+      const isBucketNotFound = selfieUpErr.message?.toLowerCase().includes('bucket not found') || selfieUpErr.statusCode === '404';
+      return res.status(502).json({
+        success: false,
+        error: 'Bad Gateway',
+        code: isBucketNotFound ? 'STORAGE_BUCKET_MISSING' : 'UPLOAD_FAILED',
+        message: isBucketNotFound
+          ? 'Storage bucket "applicant-documents" does not exist in Supabase. Please create a private bucket named "applicant-documents" in Supabase Storage.'
+          : `Failed to store selfie photo: ${selfieUpErr.message}`
+      });
+    }
+
+    const { error: aadhaarUpErr } = await supabase.storage
+      .from('applicant-documents')
+      .upload(aadhaarPath, aadhaar.buffer, { contentType: aadhaar.mime, upsert: false });
+
+    if (aadhaarUpErr) {
+      console.error('[submitKyc Aadhaar Upload Error]', aadhaarUpErr);
+      const isBucketNotFound = aadhaarUpErr.message?.toLowerCase().includes('bucket not found') || aadhaarUpErr.statusCode === '404';
+      return res.status(502).json({
+        success: false,
+        error: 'Bad Gateway',
+        code: isBucketNotFound ? 'STORAGE_BUCKET_MISSING' : 'UPLOAD_FAILED',
+        message: isBucketNotFound
+          ? 'Storage bucket "applicant-documents" does not exist in Supabase. Please create a private bucket named "applicant-documents" in Supabase Storage.'
+          : `Failed to store Aadhaar document: ${aadhaarUpErr.message}`
+      });
+    }
+
+    // Upsert into candidate_kyc table (status is strictly 'submitted')
+    const nowIso = new Date().toISOString();
+    const { data: savedKyc, error: dbErr } = await supabase
+      .from('candidate_kyc')
+      .upsert({
+        candidate_id: candidateId,
+        legal_full_name: legal_full_name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        address: address.trim(),
+        live_latitude: numLat,
+        live_longitude: numLng,
+        geo_captured_at: nowIso,
+        selfie_storage_path: selfiePath,
+        aadhaar_storage_path: aadhaarPath,
+        consent_given: true,
+        consent_timestamp: nowIso,
+        status: 'submitted',
+        updated_at: nowIso
+      }, { onConflict: 'candidate_id' })
+      .select('id, candidate_id, legal_full_name, phone, email, address, live_latitude, live_longitude, geo_captured_at, consent_timestamp, status, created_at, updated_at')
+      .single();
+
+    if (dbErr) {
+      console.error('[submitKyc DB Upsert Error]', dbErr);
+      throw dbErr;
+    }
+
+    // Safely remove prior files now that replacement record is committed
+    if (priorKyc) {
+      const obsolete = [];
+      if (priorKyc.selfie_storage_path && priorKyc.selfie_storage_path !== selfiePath) {
+        obsolete.push(priorKyc.selfie_storage_path);
+      }
+      if (priorKyc.aadhaar_storage_path && priorKyc.aadhaar_storage_path !== aadhaarPath) {
+        obsolete.push(priorKyc.aadhaar_storage_path);
+      }
+      if (obsolete.length > 0) {
+        await supabase.storage.from('applicant-documents').remove(obsolete).catch(err => {
+          console.warn('[submitKyc Cleanup Warning] Failed to delete obsolete files:', err.message);
+        });
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'KYC submitted successfully.',
+      kyc: savedKyc
+    });
+  } catch (error) {
+    console.error('[submitKyc Error]', error);
+
+    // Fail-safe cleanup: only delete in-flight paths IF DB check confirms zero references
+    for (const filePath of inFlightPaths) {
+      try {
+        const { data: ref, error: refErr } = await supabase
+          .from('candidate_kyc')
+          .select('id')
+          .or(`selfie_storage_path.eq.${filePath},aadhaar_storage_path.eq.${filePath}`)
+          .maybeSingle();
+
+        if (!refErr && !ref) {
+          await supabase.storage.from('applicant-documents').remove([filePath]).catch(() => {});
+        }
+      } catch (cleanErr) {
+        // Safe: never delete if database reference status is uncertain
+      }
+    }
+
+    const statusCode = error.statusCode || 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: statusCode === 400 ? 'Bad Request' : 'Internal Server Error',
+      message: error.message || 'Failed to submit candidate KYC.'
+    });
+  }
+};
+
+/**
+ * Controller: Get Monthly Profile Views
+ * GET /api/candidate/profile-views
+ */
+const getProfileViews = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    const months = parseInt(req.query.months, 10) || 6;
+    const viewsData = await CandidateProfileService.getMonthlyProfileViews(userId, Math.min(Math.max(months, 1), 60));
+
+    return res.status(200).json({
+      success: true,
+      data: viewsData
+    });
+  } catch (error) {
+    console.error('[getProfileViews Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve profile views.'
+    });
+  }
+};
+
+/**
+ * Controller: Get Candidate Saved Jobs
+ * GET /api/candidate/saved-jobs
+ */
+const getSavedJobs = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    const savedJobs = await CandidateProfileService.getSavedJobs(userId);
+    return res.status(200).json({
+      success: true,
+      data: savedJobs
+    });
+  } catch (error) {
+    console.error('[getSavedJobs Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve saved jobs.'
+    });
+  }
+};
+
+/**
+ * Controller: Save / Bookmark a Job
+ * POST /api/candidate/saved-jobs/:jobId
+ */
+const saveJob = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { jobId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (!jobId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Job ID is required.'
+      });
+    }
+
+    const result = await CandidateProfileService.saveJob(userId, jobId);
+    return res.status(200).json({
+      success: true,
+      message: 'Job saved successfully',
+      data: result
+    });
+  } catch (error) {
+    console.error('[saveJob Error]', error);
+    const statusCode = error.message.includes('not found') ? 404 : 500;
+    return res.status(statusCode).json({
+      success: false,
+      error: statusCode === 404 ? 'Not Found' : 'Internal Server Error',
+      message: error.message || 'Failed to save job.'
+    });
+  }
+};
+
+/**
+ * Controller: Unsave a Job
+ * DELETE /api/candidate/saved-jobs/:jobId
+ */
+const unsaveJob = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { jobId } = req.params;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    if (!jobId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bad Request',
+        message: 'Job ID is required.'
+      });
+    }
+
+    await CandidateProfileService.unsaveJob(userId, jobId);
+    return res.status(200).json({
+      success: true,
+      message: 'Job removed from saved jobs successfully'
+    });
+  } catch (error) {
+    console.error('[unsaveJob Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to remove saved job.'
+    });
+  }
+};
+
+/**
+ * Controller: Get Candidate Packages
+ * GET /api/candidate/packages
+ * Returns real purchased or subscribed packages for the candidate.
+ * If candidate packages table/records do not exist, returns empty array without inventing mock data.
+ */
+const getCandidatePackages = async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized',
+        message: 'Authenticated user identity not found.'
+      });
+    }
+
+    const packages = await CandidateProfileService.getCandidatePackages(userId);
+    return res.status(200).json({
+      success: true,
+      packages: packages || []
+    });
+  } catch (error) {
+    console.error('[getCandidatePackages Error]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal Server Error',
+      message: error.message || 'Failed to retrieve candidate packages.'
+    });
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
   uploadAvatar,
-  deleteProfile
+  deleteProfile,
+  getKycStatus,
+  submitKyc,
+  getProfileViews,
+  getSavedJobs,
+  saveJob,
+  unsaveJob,
+  getCandidatePackages
 };
 
 

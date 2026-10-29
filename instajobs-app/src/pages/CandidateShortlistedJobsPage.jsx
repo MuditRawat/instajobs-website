@@ -2,53 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../components/common/Header';
 import LogoutLink from '../components/common/LogoutLink';
+import DeleteProfileLink from '../components/common/DeleteProfileLink';
 import CandidateSkillsPercentage from '../components/common/CandidateSkillsPercentage';
-
-const initialShortlistedJobs = [
-  {
-    id: 1,
-    jobId: 1,
-    title: 'Senior Full Stack Engineer, Creator Success',
-    company: 'Segment',
-    location: 'London, UK',
-    logo: '/images/resource/company-logo/1-1.png',
-    dateApplied: 'Dec 5, 2020',
-    status: 'Active',
-  },
-  {
-    id: 2,
-    jobId: 2,
-    title: 'Senior Product Designer',
-    company: 'Segment',
-    location: 'London, UK',
-    logo: '/images/resource/company-logo/1-2.png',
-    dateApplied: 'Dec 5, 2020',
-    status: 'Active',
-  },
-  {
-    id: 3,
-    jobId: 3,
-    title: 'Sr. Full Stack Engineer',
-    company: 'Segment',
-    location: 'London, UK',
-    logo: '/images/resource/company-logo/1-3.png',
-    dateApplied: 'Dec 5, 2020',
-    status: 'Active',
-  },
-  {
-    id: 4,
-    jobId: 4,
-    title: 'Product Manager, Studio',
-    company: 'Segment',
-    location: 'London, UK',
-    logo: '/images/resource/company-logo/1-4.png',
-    dateApplied: 'Dec 5, 2020',
-    status: 'Active',
-  },
-];
+import { candidateService } from '../services/candidateService';
+import { formatSalary, formatLocation, formatIndianDate } from '../utils/jobFormatters';
 
 const CandidateShortlistedJobsPage = () => {
-  const [jobs, setJobs] = useState(initialShortlistedJobs);
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -83,8 +46,35 @@ const CandidateShortlistedJobsPage = () => {
     };
   }, []);
 
-  const handleDeleteJob = (id) => {
-    setJobs((prevJobs) => prevJobs.filter((job) => job.id !== id));
+  const loadSavedJobs = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await candidateService.getSavedJobs();
+      setSavedJobs(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Failed to load saved jobs:', err);
+      setError(err.message || 'Failed to load saved jobs.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSavedJobs();
+  }, []);
+
+  const handleDeleteJob = async (jobId) => {
+    try {
+      setDeletingId(jobId);
+      await candidateService.unsaveJob(jobId);
+      setSavedJobs((prev) => prev.filter((item) => item.job_id !== jobId && item.job?.id !== jobId));
+    } catch (err) {
+      console.error('Failed to unsave job:', err);
+      alert(err.message || 'Could not remove saved job.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   return (
@@ -109,16 +99,19 @@ const CandidateShortlistedJobsPage = () => {
                 <i className="la la-user-tie"></i> My Profile
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tab
             <li>
               <Link to="/candidate-dashboard/my-resume">
                 <i className="la la-file-invoice"></i> My Resume
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/applied-jobs">
                 <i className="la la-briefcase"></i> Applied Jobs
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/job-alerts">
                 <i className="la la-bell"></i> Job Alerts
@@ -129,6 +122,7 @@ const CandidateShortlistedJobsPage = () => {
                 <i className="la la-bookmark-o"></i> Shortlisted Jobs
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/cv-manager">
                 <i className="la la-file-invoice"></i> CV manager
@@ -139,6 +133,7 @@ const CandidateShortlistedJobsPage = () => {
                 <i className="la la-box"></i> Packages
               </Link>
             </li>
+            {/* Temporarily hidden candidate dashboard tabs
             <li>
               <Link to="/candidate-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -149,6 +144,7 @@ const CandidateShortlistedJobsPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/candidate-dashboard/my-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -158,9 +154,7 @@ const CandidateShortlistedJobsPage = () => {
               <LogoutLink />
             </li>
             <li>
-              <Link to="/">
-                <i className="la la-trash"></i> Delete Profile
-              </Link>
+              <DeleteProfileLink />
             </li>
           </ul>
 
@@ -198,69 +192,119 @@ const CandidateShortlistedJobsPage = () => {
                   </div>
 
                   <div className="widget-content">
-                    <div className="table-outer">
-                      <table className="default-table manage-job-table">
-                        <thead>
-                          <tr>
-                            <th>Job Title</th>
-                            <th>Date Applied</th>
-                            <th>Status</th>
-                            <th>Action</th>
-                          </tr>
-                        </thead>
+                    {loading ? (
+                      <div className="text-center py-5">
+                        <div className="spinner-border text-primary" role="status">
+                          <span className="sr-only">Loading saved jobs...</span>
+                        </div>
+                        <p className="mt-3 text-muted">Loading your saved jobs...</p>
+                      </div>
+                    ) : error ? (
+                      <div className="text-center py-5">
+                        <div className="alert alert-warning mb-3">{error}</div>
+                        <button type="button" className="btn btn-outline-primary btn-sm" onClick={loadSavedJobs}>
+                          Try Again
+                        </button>
+                      </div>
+                    ) : savedJobs.length === 0 ? (
+                      <div className="text-center py-5">
+                        <i className="la la-bookmark-o text-muted" style={{ fontSize: '48px', opacity: 0.5 }}></i>
+                        <h5 className="mt-3 mb-1 font-weight-bold text-dark">No Shortlisted Jobs</h5>
+                        <p className="text-muted small mb-3">
+                          You haven't shortlisted any jobs yet. Browse available gig opportunities and save ones that match your preferences.
+                        </p>
+                        <Link to="/jobs" className="theme-btn btn-style-one">
+                          Explore Open Jobs
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="table-outer">
+                        <table className="default-table manage-job-table">
+                          <thead>
+                            <tr>
+                              <th>Job Title</th>
+                              <th>Date Saved</th>
+                              <th>Job Type / Pay</th>
+                              <th>Action</th>
+                            </tr>
+                          </thead>
 
-                        <tbody>
-                          {jobs.map((job) => (
-                            <tr key={job.id}>
-                              <td>
-                                {/* Job Block */}
-                                <div className="job-block">
-                                  <div className="inner-box">
-                                    <div className="content">
-                                      <span className="company-logo">
-                                        <img src={job.logo} alt={job.company} />
-                                      </span>
-                                      <h4>
-                                        <Link to={`/jobs/${job.jobId}`}>{job.title}</Link>
-                                      </h4>
-                                      <ul className="job-info">
+                          <tbody>
+                            {savedJobs.map((item) => {
+                              const job = item.job || {};
+                              const employer = job.employer_profile || {};
+                              const logo = employer.logo_url || '/images/resource/company-logo/1-1.png';
+                              const companyName = employer.company_name || 'Hiring Company';
+                              const locationStr = formatLocation(job);
+                              const salaryStr = formatSalary(job);
+                              const dateSavedStr = formatIndianDate(item.created_at);
+
+                              return (
+                                <tr key={item.id}>
+                                  <td>
+                                    {/* Job Block */}
+                                    <div className="job-block">
+                                      <div className="inner-box">
+                                        <div className="content">
+                                          <span className="company-logo">
+                                            <img
+                                              src={logo}
+                                              alt={companyName}
+                                              onError={(e) => {
+                                                e.target.onerror = null;
+                                                e.target.src = '/images/resource/company-logo/1-1.png';
+                                              }}
+                                            />
+                                          </span>
+                                          <h4>
+                                            <Link to={`/jobs/${job.id || item.job_id}`}>{job.title || 'Untitled Gig'}</Link>
+                                          </h4>
+                                          <ul className="job-info">
+                                            <li>
+                                              <span className="icon flaticon-briefcase"></span> {companyName}
+                                            </li>
+                                            <li>
+                                              <span className="icon flaticon-map-locator"></span> {locationStr}
+                                            </li>
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td>{dateSavedStr}</td>
+                                  <td className="status">
+                                    <div className="font-weight-500 text-dark">{job.job_type || 'Gig'}</div>
+                                    {salaryStr && <div className="small text-muted">{salaryStr}</div>}
+                                  </td>
+                                  <td>
+                                    <div className="option-box">
+                                      <ul className="option-list">
                                         <li>
-                                          <span className="icon flaticon-briefcase"></span> {job.company}
+                                          <Link to={`/jobs/${job.id || item.job_id}`} data-text="View Job Details" title="View Job Details">
+                                            <span className="la la-eye"></span>
+                                          </Link>
                                         </li>
                                         <li>
-                                          <span className="icon flaticon-map-locator"></span> {job.location}
+                                          <button
+                                            type="button"
+                                            data-text="Remove from Saved"
+                                            title="Remove from Saved"
+                                            disabled={deletingId === (job.id || item.job_id)}
+                                            onClick={() => handleDeleteJob(job.id || item.job_id)}
+                                          >
+                                            <span className="la la-trash"></span>
+                                          </button>
                                         </li>
                                       </ul>
                                     </div>
-                                  </div>
-                                </div>
-                              </td>
-                              <td>{job.dateApplied}</td>
-                              <td className="status">{job.status}</td>
-                              <td>
-                                <div className="option-box">
-                                  <ul className="option-list">
-                                    <li>
-                                      <Link to={`/jobs/${job.jobId}`} data-text="View Aplication">
-                                        <span className="la la-eye"></span>
-                                      </Link>
-                                    </li>
-                                    <li>
-                                      <button
-                                        data-text="Delete Aplication"
-                                        onClick={() => handleDeleteJob(job.id)}
-                                      >
-                                        <span className="la la-trash"></span>
-                                      </button>
-                                    </li>
-                                  </ul>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -271,7 +315,7 @@ const CandidateShortlistedJobsPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

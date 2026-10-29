@@ -113,6 +113,7 @@ class AdminService {
         categories,
         allow_in_search,
         approval_status,
+        ai_interview_enabled,
         social_facebook,
         social_twitter,
         social_linkedin,
@@ -164,7 +165,7 @@ class AdminService {
       if (trimmedCountry.length > 0 && trimmedCountry.toLowerCase() !== 'all') {
         const sanitizedCountry = trimmedCountry.replace(/[%_,()]/g, '');
         if (sanitizedCountry.length > 0) {
-          query = query.ilike('country', `%${sanitizedCountry}%`);
+          query = query.or(`country.ilike.%${sanitizedCountry}%,city.ilike.%${sanitizedCountry}%,complete_address.ilike.%${sanitizedCountry}%`);
         }
       }
     }
@@ -218,7 +219,7 @@ class AdminService {
           if (trimmedCountry.length > 0 && trimmedCountry.toLowerCase() !== 'all') {
             const sanitizedCountry = trimmedCountry.replace(/[%_,()]/g, '');
             if (sanitizedCountry.length > 0) {
-              countQuery = countQuery.ilike('country', `%${sanitizedCountry}%`);
+              countQuery = countQuery.or(`country.ilike.%${sanitizedCountry}%,city.ilike.%${sanitizedCountry}%,complete_address.ilike.%${sanitizedCountry}%`);
             }
           }
         }
@@ -265,6 +266,7 @@ class AdminService {
         categories: emp.categories || [],
         allow_in_search: emp.allow_in_search,
         approval_status: approvalStatus,
+        ai_interview_enabled: Boolean(emp.ai_interview_enabled),
         social_facebook: emp.social_facebook,
         social_twitter: emp.social_twitter,
         social_linkedin: emp.social_linkedin,
@@ -439,6 +441,7 @@ class AdminService {
         phone,
         website,
         approval_status,
+        ai_interview_enabled,
         city,
         country,
         created_at,
@@ -448,6 +451,81 @@ class AdminService {
 
     if (updateErr) {
       throw new Error(`Database error updating employer approval status: ${updateErr.message}`);
+    }
+
+    return updatedProfile;
+  }
+
+  /**
+   * Update employer AI Interview access permission (Admin only)
+   * @param {string} employerProfileId - UUID of employer_profiles record
+   * @param {boolean} enabled - true to grant access, false to revoke
+   * @returns {Promise<object>} Updated employer profile
+   */
+  static async updateEmployerAiInterviewAccess(employerProfileId, enabled) {
+    if (!supabase) {
+      throw new Error('Supabase database client is not configured.');
+    }
+
+    if (!employerProfileId) {
+      const err = new Error('Employer profile ID is required.');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (typeof enabled !== 'boolean') {
+      const err = new Error('ai_interview_enabled must be a boolean (true or false).');
+      err.statusCode = 400;
+      err.code = 'INVALID_AI_INTERVIEW_ACCESS_VALUE';
+      throw err;
+    }
+
+    // Check if employer profile exists
+    const { data: existingProfile, error: fetchErr } = await supabase
+      .from('employer_profiles')
+      .select('id, user_id, company_name, approval_status, ai_interview_enabled')
+      .eq('id', employerProfileId)
+      .maybeSingle();
+
+    if (fetchErr) {
+      throw new Error(`Database error fetching employer profile: ${fetchErr.message}`);
+    }
+
+    if (!existingProfile) {
+      const err = new Error(`Employer profile with ID '${employerProfileId}' was not found.`);
+      err.statusCode = 404;
+      err.code = 'EMPLOYER_NOT_FOUND';
+      throw err;
+    }
+
+    const now = new Date().toISOString();
+    const updatePayload = {
+      ai_interview_enabled: enabled,
+      updated_at: now
+    };
+
+    const { data: updatedProfile, error: updateErr } = await supabase
+      .from('employer_profiles')
+      .update(updatePayload)
+      .eq('id', employerProfileId)
+      .select(`
+        id,
+        user_id,
+        company_name,
+        company_email,
+        phone,
+        website,
+        approval_status,
+        ai_interview_enabled,
+        city,
+        country,
+        created_at,
+        updated_at
+      `)
+      .single();
+
+    if (updateErr) {
+      throw new Error(`Database error updating employer AI interview access: ${updateErr.message}`);
     }
 
     return updatedProfile;

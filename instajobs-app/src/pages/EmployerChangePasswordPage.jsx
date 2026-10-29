@@ -71,9 +71,10 @@ const EmployerChangePasswordPage = () => {
             </li>
             <li>
               <Link to="/employer-dashboard/shortlisted-resumes">
-                <i className="la la-bookmark-o"></i> Shortlisted Resumes
+                <i className="la la-bookmark-o"></i> Shortlisted Applicants
               </Link>
             </li>
+            {/* Temporarily hidden employer dashboard tabs
             <li>
               <Link to="/employer-dashboard/messages">
                 <i className="la la-comment-o"></i> Messages
@@ -89,6 +90,7 @@ const EmployerChangePasswordPage = () => {
                 <i className="la la-lock"></i> Change Password
               </Link>
             </li>
+            */}
             <li>
               <Link to="/employer-dashboard/company-profile">
                 <i className="la la-user-alt"></i> View Profile
@@ -173,7 +175,7 @@ const EmployerChangePasswordPage = () => {
 
       {/* Copyright Footer */}
       <div className="copyright-text">
-        <p>© 2021 Superio. All Right Reserved.</p>
+        <p>© 2026 instajobs. All Rights Reserved.</p>
       </div>
     </div>
   );

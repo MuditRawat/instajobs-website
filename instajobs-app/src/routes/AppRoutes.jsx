@@ -44,6 +44,8 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import PublicOnlyRoute from '../components/common/PublicOnlyRoute';
 import ScrollToTopButton from '../components/common/ScrollToTopButton';
 
+import ErrorBoundary from '../components/common/ErrorBoundary';
+
 const AppRoutes = () => {
   return (
     <>
@@ -62,31 +64,31 @@ const AppRoutes = () => {
         <Route path="/employers-single-v1" element={<Navigate to="/employers/1" replace />} />
 
         {/* Protected Admin Routes */}
-        <Route path="/admin-dashboard" element={<ProtectedRoute allowedRole="admin"><AdminDashboardPage /></ProtectedRoute>} />
+        <Route path="/admin-dashboard" element={<ProtectedRoute allowedRole="admin"><ErrorBoundary><AdminDashboardPage /></ErrorBoundary></ProtectedRoute>} />
 
         {/* Protected Employer Routes */}
-        <Route path="/employer-dashboard" element={<ProtectedRoute allowedRole="employer"><EmployerDashboardPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/company-profile" element={<ProtectedRoute allowedRole="employer"><EmployerCompanyProfilePage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/post-job" element={<ProtectedRoute allowedRole="employer"><EmployerPostJobPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/edit-job/:id" element={<ProtectedRoute allowedRole="employer"><EmployerPostJobPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/manage-jobs" element={<ProtectedRoute allowedRole="employer"><EmployerManageJobsPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/applicants" element={<ProtectedRoute allowedRole="employer"><EmployerApplicantsPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/shortlisted-resumes" element={<ProtectedRoute allowedRole="employer"><EmployerShortlistedResumesPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/messages" element={<ProtectedRoute allowedRole="employer"><EmployerMessagesPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/resume-alerts" element={<ProtectedRoute allowedRole="employer"><EmployerResumeAlertsPage /></ProtectedRoute>} />
-        <Route path="/employer-dashboard/change-password" element={<ProtectedRoute allowedRole="employer"><EmployerChangePasswordPage /></ProtectedRoute>} />
+        <Route path="/employer-dashboard" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerDashboardPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/company-profile" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerCompanyProfilePage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/post-job" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerPostJobPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/edit-job/:id" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerPostJobPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/manage-jobs" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerManageJobsPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/applicants" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerApplicantsPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/shortlisted-resumes" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerShortlistedResumesPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/messages" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerMessagesPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/resume-alerts" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerResumeAlertsPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/employer-dashboard/change-password" element={<ProtectedRoute allowedRole="employer"><ErrorBoundary><EmployerChangePasswordPage /></ErrorBoundary></ProtectedRoute>} />
 
         {/* Protected Candidate Routes */}
-        <Route path="/candidate-dashboard" element={<ProtectedRoute allowedRole="candidate"><CandidateDashboardPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/my-profile" element={<ProtectedRoute allowedRole="candidate"><CandidateMyProfilePage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/my-resume" element={<ProtectedRoute allowedRole="candidate"><CandidateMyResumePage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/applied-jobs" element={<ProtectedRoute allowedRole="candidate"><CandidateAppliedJobsPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/job-alerts" element={<ProtectedRoute allowedRole="candidate"><CandidateJobAlertsPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/shortlisted-jobs" element={<ProtectedRoute allowedRole="candidate"><CandidateShortlistedJobsPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/cv-manager" element={<ProtectedRoute allowedRole="candidate"><CandidateCvManagerPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/packages" element={<ProtectedRoute allowedRole="candidate"><CandidatePackagesPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/messages" element={<ProtectedRoute allowedRole="candidate"><CandidateMessagesPage /></ProtectedRoute>} />
-        <Route path="/candidate-dashboard/change-password" element={<ProtectedRoute allowedRole="candidate"><CandidateChangePasswordPage /></ProtectedRoute>} />
+        <Route path="/candidate-dashboard" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateDashboardPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/my-profile" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateMyProfilePage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/my-resume" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateMyResumePage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/applied-jobs" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateAppliedJobsPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/job-alerts" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateJobAlertsPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/shortlisted-jobs" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateShortlistedJobsPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/cv-manager" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateCvManagerPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/packages" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidatePackagesPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/messages" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateMessagesPage /></ErrorBoundary></ProtectedRoute>} />
+        <Route path="/candidate-dashboard/change-password" element={<ProtectedRoute allowedRole="candidate"><ErrorBoundary><CandidateChangePasswordPage /></ErrorBoundary></ProtectedRoute>} />
 
         {/* Blog Routes */}
         <Route path="/blogs" element={<BlogListPage />} />
@@ -110,7 +112,7 @@ const AppRoutes = () => {
         <Route path="/faqs" element={<FaqsPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/invoice" element={<InvoicePage />} />
-        <Route path="/contact" element={<ContactPage />} />
+        {/* <Route path="/contact" element={<ContactPage />} /> */}
 
         {/* Auth Public-Only Routes (Redirects authenticated users to their dashboard) */}
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />

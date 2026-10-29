@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import AuthModal from './AuthModal';
 import LogoutLink from './LogoutLink';
+import DeleteProfileLink from './DeleteProfileLink';
 import RoleAwareLink from './RoleAwareLink';
 import { useAuth } from '../../context/AuthContext';
 
@@ -201,9 +202,9 @@ const Header = () => {
                 <li>
                   <Link to="/invoice">Invoice</Link>
                 </li>
-                <li>
+                {/* <li>
                   <Link to="/contact">Contact</Link>
-                </li>
+                </li> */}
               </ul>
             </li>
 
@@ -214,17 +215,20 @@ const Header = () => {
               </RoleAwareLink>
               <span>
                 <span className="contact-info">
-                  <span className="phone-num">
-                    <span>Call us</span>
-                    <a href="tel:1234567890">123 456 7890</a>
-                  </span>
                   <span className="address">
-                    329 Queensberry Street, North Melbourne VIC <br />
-                    3051, Australia.
+                    Pan-India Gig Platform
                   </span>
-                  <a href="mailto:support@superio.com" className="email">
-                    support@superio.com
-                  </a>
+                  <span className="phone-num">
+                    <span>Support</span>
+                    {/* <Link to="/contact">Contact Us</Link> */}
+                    <a
+                      href="https://mail.google.com/mail/?view=cm&to=support%40instajobs.in"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      support@instajobs.in
+                    </a>
+                  </span>
                 </span>
                 <span className="social-links">
                   <a href="#">
@@ -308,7 +312,7 @@ const Header = () => {
                     </li>
                     <li>
                       <Link to="/employer-dashboard/shortlisted-resumes">
-                        <i className="la la-bookmark-o"></i>Shortlisted Resumes
+                        <i className="la la-bookmark-o"></i>Shortlisted Applicants
                       </Link>
                     </li>
                     <li>
@@ -335,9 +339,7 @@ const Header = () => {
                       <LogoutLink />
                     </li>
                     <li>
-                      <Link to="/">
-                        <i className="la la-trash"></i>Delete Profile
-                      </Link>
+                      <DeleteProfileLink />
                     </li>
                   </>
                 ) : (
@@ -352,16 +354,19 @@ const Header = () => {
                         <i className="la la-user-tie"></i>My Profile
                       </Link>
                     </li>
+                    {/* Temporarily hidden candidate dashboard tab
                     <li className={currentPath === '/candidate-dashboard/my-resume' ? 'active' : ''}>
                       <Link to="/candidate-dashboard/my-resume">
                         <i className="la la-file-invoice"></i>My Resume
                       </Link>
                     </li>
+                    */}
                     <li className={currentPath === '/candidate-dashboard/applied-jobs' ? 'active' : ''}>
                       <Link to="/candidate-dashboard/applied-jobs">
                         <i className="la la-briefcase"></i> Applied Jobs
                       </Link>
                     </li>
+                    {/* Temporarily hidden candidate dashboard tabs
                     <li className={currentPath === '/candidate-dashboard/job-alerts' ? 'active' : ''}>
                       <Link to="/candidate-dashboard/job-alerts">
                         <i className="la la-bell"></i>Job Alerts
@@ -372,6 +377,7 @@ const Header = () => {
                         <i className="la la-bookmark-o"></i>Shortlisted Jobs
                       </Link>
                     </li>
+                    */}
                     <li className={currentPath === '/candidate-dashboard/cv-manager' ? 'active' : ''}>
                       <Link to="/candidate-dashboard/cv-manager">
                         <i className="la la-file-invoice"></i> CV manager
@@ -382,6 +388,7 @@ const Header = () => {
                         <i className="la la-box"></i>Packages
                       </Link>
                     </li>
+                    {/* Temporarily hidden candidate dashboard tabs
                     <li className={currentPath === '/candidate-dashboard/messages' ? 'active' : ''}>
                       <Link to="/candidate-dashboard/messages">
                         <i className="la la-comment-o"></i>Messages
@@ -392,6 +399,7 @@ const Header = () => {
                         <i className="la la-lock"></i>Change Password
                       </Link>
                     </li>
+                    */}
                     <li>
                       <Link to="/candidate-dashboard/my-profile">
                         <i className="la la-user-alt"></i>View Profile
@@ -401,9 +409,7 @@ const Header = () => {
                       <LogoutLink />
                     </li>
                     <li>
-                      <Link to="/">
-                        <i className="la la-trash"></i>Delete Profile
-                      </Link>
+                      <DeleteProfileLink />
                     </li>
                   </>
                 )}

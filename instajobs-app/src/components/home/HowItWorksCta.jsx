@@ -4,20 +4,20 @@ const steps = [
   {
     id: 1,
     icon: 'fal fa-book-user',
-    titleLine1: 'Register an account',
-    titleLine2: 'to start',
+    titleLine1: 'Create your account',
+    titleLine2: 'in under 2 minutes',
   },
   {
     id: 2,
     icon: 'far fa-file-magnifying-glass',
-    titleLine1: 'Explore over thousands',
-    titleLine2: 'of resumes',
+    titleLine1: 'Discover nearby gigs',
+    titleLine2: 'with transparent pay',
   },
   {
     id: 3,
     icon: 'far fa-clipboard-list-check',
-    titleLine1: 'Find the most suitable',
-    titleLine2: 'candidate.',
+    titleLine1: 'Apply with reusable KYC',
+    titleLine2: 'and start earning quickly.',
   },
 ];
 
